@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Explore Musicians</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+    background: #0f172a;
+    color: white;
+}
+
+.container {
+    max-width: 700px;
+    margin: auto;
+    padding: 20px;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.back-btn {
+    cursor: pointer;
+    color: #38bdf8;
+}
+
+.card {
+    background: #1e293b;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.btn {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: #38bdf8;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <span class="back-btn" onclick="goBack()">⬅</span>
+        <h2>Explore Musicians</h2>
+    </div>
+
+    <div id="exploreList"></div>
+
+</div>
+
+<script type="module">
+
+import { auth, db } from "./js/firebase-config.js";
+import { collection, getDocs } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { onAuthStateChanged } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+let currentUserId = "";
+
+// 🔙 Back
+window.goBack = function() {
+    window.location.href = "home.html";
+};
+
+// 🔐 Auth check
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        currentUserId = user.uid;
+        loadUsers();
+    } else {
+        window.location.href = "index.html";
+    }
+});
+
+// 📥 Load all users
+async function loadUsers() {
+
+    const snapshot = await getDocs(collection(db, "users"));
+    const container = document.getElementById("exploreList");
+
+    container.innerHTML = "";
+
+    snapshot.forEach((docSnap) => {
+
+        const user = docSnap.data();
+        const uid = docSnap.id;
+
+        // Skip current user
+        if (uid === currentUserId) return;
+
+        container.innerHTML += `
+            <div class="card">
+                <h3>${user.name}</h3>
+                <p><strong>Role:</strong> ${user.role || "Not specified"}</p>
+                <p>${user.bio || "No bio available"}</p>
+                <button class="btn" onclick="startChat('${uid}')">
+                    Message
+                </button>
+            </div>
+        `;
+    });
+
+    if (container.innerHTML === "") {
+        container.innerHTML = "<p>No users found 😢</p>";
+    }
+}
+
+// 💬 Start chat
+window.startChat = function(uid) {
+    window.location.href = "chat.html?uid=" + uid;
+};
+
+</script>
+
+</body>
+</html>

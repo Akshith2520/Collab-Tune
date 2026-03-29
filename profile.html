@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Profile</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #0f172a;
+    color: white;
+}
+
+.container {
+    max-width: 700px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+.profile-card {
+    background: #1e293b;
+    padding: 25px;
+    border-radius: 10px;
+}
+
+h2 {
+    margin-top: 0;
+}
+
+input, textarea, select {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 5px;
+    border: none;
+}
+
+textarea {
+    resize: none;
+    height: 80px;
+}
+
+button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    background: #2563eb;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #1d4ed8;
+}
+
+.profile-view p {
+    margin: 8px 0;
+}
+
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.back {
+    cursor: pointer;
+    color: #38bdf8;
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 10px;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div class="top-bar">
+    <div class="back" onclick="goHome()">⬅ Back</div>
+    <button onclick="toggleEdit()">Edit Profile</button>
+</div>
+
+<div class="profile-card">
+
+    <div id="viewMode" class="profile-view"></div>
+
+    <div id="editMode" style="display:none;">
+        <input type="text" id="name" placeholder="Full Name">
+        <input type="text" id="phone" placeholder="Phone Number">
+        <select id="domain">
+            <option value="">Select Domain</option>
+            <option>Guitarist</option>
+            <option>Pianist</option>
+            <option>Singer</option>
+            <option>Drummer</option>
+            <option>Violinist</option>
+            <option>Composer</option>
+        </select>
+        <input type="text" id="location" placeholder="Location">
+        <input type="text" id="experience" placeholder="Years of Experience">
+        <textarea id="bio" placeholder="Short Bio"></textarea>
+
+        <button onclick="saveProfile()">Save</button>
+    </div>
+
+</div>
+</div>
+
+<script type="module">
+import { onAuthStateChanged } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+import { doc, getDoc, updateDoc } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+import { auth, db } from "./js/firebase-config.js";
+
+let currentUser;
+
+onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+        window.location.href = "index.html";
+    } else {
+        currentUser = user;
+        loadProfile();
+    }
+});
+
+async function loadProfile() {
+    const docRef = doc(db, "users", currentUser.uid);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+        const data = docSnap.data();
+
+        document.getElementById("viewMode").innerHTML = `
+            <h2>${data.name || "No Name"}</h2>
+            <p><strong>Email:</strong> ${currentUser.email}</p>
+            <p><strong>Phone:</strong> ${data.phone || "-"}</p>
+            <p><strong>Domain:</strong> ${data.domain || "-"}</p>
+            <p><strong>Location:</strong> ${data.location || "-"}</p>
+            <p><strong>Experience:</strong> ${data.experience || "-"}</p>
+            <p><strong>Bio:</strong> ${data.bio || "-"}</p>
+        `;
+
+        // Prefill edit form
+        document.getElementById("name").value = data.name || "";
+        document.getElementById("phone").value = data.phone || "";
+        document.getElementById("domain").value = data.domain || "";
+        document.getElementById("location").value = data.location || "";
+        document.getElementById("experience").value = data.experience || "";
+        document.getElementById("bio").value = data.bio || "";
+    }
+}
+
+window.toggleEdit = function() {
+    const edit = document.getElementById("editMode");
+    const view = document.getElementById("viewMode");
+
+    if (edit.style.display === "none") {
+        edit.style.display = "block";
+        view.style.display = "none";
+    } else {
+        edit.style.display = "none";
+        view.style.display = "block";
+    }
+};
+
+window.saveProfile = async function() {
+    await updateDoc(doc(db, "users", currentUser.uid), {
+        name: document.getElementById("name").value,
+        phone: document.getElementById("phone").value,
+        domain: document.getElementById("domain").value,
+        location: document.getElementById("location").value,
+        experience: document.getElementById("experience").value,
+        bio: document.getElementById("bio").value
+    });
+
+    toggleEdit();
+    loadProfile();
+};
+
+window.goHome = function() {
+    window.location.href = "home.html";
+};
+</script>
+
+</body>
+</html>

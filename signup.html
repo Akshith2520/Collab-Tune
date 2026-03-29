@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sign Up - Music Collaboration</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to right, #141e30, #243b55);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: #fff;
+            padding: 40px;
+            border-radius: 8px;
+            width: 350px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #2b6cb0;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #1e4e8c;
+        }
+
+        .link {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .link a {
+            text-decoration: none;
+            color: #2b6cb0;
+        }
+
+        .error {
+            color: red;
+            font-size: 14px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Create Account</h2>
+
+    <input type="text" id="name" placeholder="Full Name" required>
+    <input type="text" id="instrument" placeholder="Instrument (Guitar, Piano, etc)">
+    <input type="email" id="email" placeholder="Email Address" required>
+    <input type="password" id="password" placeholder="Password" required>
+
+    <button onclick="signup()">Sign Up</button>
+
+    <p class="error" id="errorMsg"></p>
+
+    <div class="link">
+        Already have an account? 
+        <a href="index.html">Login</a>
+    </div>
+</div>
+
+<script type="module">
+    import { createUserWithEmailAndPassword } 
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    import { setDoc, doc } 
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    import { auth, db } from "./js/firebase-config.js";
+
+    window.signup = async function() {
+        const name = document.getElementById("name").value;
+        const instrument = document.getElementById("instrument").value;
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+
+        if (!name || !email || !password) {
+            document.getElementById("errorMsg").innerText = "Please fill all required fields";
+            return;
+        }
+
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            // Create user profile in Firestore
+            await setDoc(doc(db, "users", user.uid), {
+                name: name,
+                email: email,
+                role: (instrument || "").toLowerCase(),
+                bio: "",
+                profileImage: "",
+                createdAt: new Date()
+            });
+
+            // Redirect after successful signup
+            window.location.href = "home.html";
+
+        } catch (error) {
+            document.getElementById("errorMsg").innerText = error.message;
+        }
+    };
+</script>
+
+</body>
+</html>

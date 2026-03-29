@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #0f172a;
+    color: white;
+}
+
+.navbar {
+    background: #111827;
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 20px;
+}
+
+.nav-link {
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.nav-link:hover {
+    color: #38bdf8;
+}
+
+.container {
+    max-width: 700px;
+    margin: 30px auto;
+    padding: 0 15px;
+}
+
+.profile-box {
+    background: #1e293b;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.action-buttons button {
+    padding: 10px;
+    border: none;
+    background: #2563eb;
+    color: white;
+    cursor: pointer;
+}
+
+.post-card {
+    background: #1e293b;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.post-media {
+    width: 100%;
+    margin-top: 10px;
+    border-radius: 8px;
+}
+
+.empty-feed {
+    text-align: center;
+    color: #94a3b8;
+}
+</style>
+</head>
+
+<body>
+
+<div class="navbar">
+    <div class="nav-link" onclick="navigate('profile.html')">Profile</div>
+    <div class="nav-link" onclick="navigate('chat-list.html')">Messages</div>
+    <div class="nav-link" onclick="logout()">Logout</div>
+</div>
+
+<div class="container">
+
+    <!-- Profile -->
+    <div class="profile-box">
+        <h2 id="welcome">Loading...</h2>
+        <p id="userRole"></p>
+        <p id="userBio"></p>
+    </div>
+
+    <!-- Buttons -->
+    <div class="action-buttons">
+        <button onclick="navigate('createpost.html')">Create Post</button>
+        <button onclick="navigate('explore.html')">Explore</button>
+    </div>
+
+    <!-- Feed -->
+    <div id="feed"></div>
+
+</div>
+
+<script type="module">
+
+import { auth, db } from "./js/firebase-config.js";
+import { 
+    doc, getDoc, collection, query, orderBy, onSnapshot 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { onAuthStateChanged, signOut } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+// 🔐 Auth check
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        loadProfile(user.uid);
+        loadPosts();
+    } else {
+        window.location.href = "index.html";
+    }
+});
+
+// 👤 Load profile
+async function loadProfile(uid) {
+    const snap = await getDoc(doc(db, "users", uid));
+
+    if (snap.exists()) {
+        const data = snap.data();
+
+        document.getElementById("welcome").innerText = "Welcome " + data.name;
+        document.getElementById("userRole").innerText = "Role: " + (data.role || "Not added");
+        document.getElementById("userBio").innerText = "Bio: " + (data.bio || "No bio");
+    }
+}
+
+// 📝 Load posts with MEDIA
+function loadPosts() {
+
+    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+
+    onSnapshot(q, async (snapshot) => {
+
+        const feed = document.getElementById("feed");
+        feed.innerHTML = "";
+
+        if (snapshot.empty) {
+            feed.innerHTML = `<div class="empty-feed">No posts yet 🎵</div>`;
+            return;
+        }
+
+        for (const docSnap of snapshot.docs) {
+
+            const post = docSnap.data();
+
+            const userSnap = await getDoc(doc(db, "users", post.userId));
+            const user = userSnap.exists() ? userSnap.data() : {};
+
+            const time = new Date(post.timestamp)
+                .toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+
+            // 🎬 MEDIA HANDLING
+            let mediaHTML = "";
+
+            if (post.mediaURL) {
+                if (post.mediaType === "image") {
+                    mediaHTML = `
+                        <img src="${post.mediaURL}" class="post-media">
+                    `;
+                } else if (post.mediaType === "video") {
+                    mediaHTML = `
+                        <video controls class="post-media">
+                            <source src="${post.mediaURL}">
+                        </video>
+                    `;
+                }
+            }
+
+            feed.innerHTML += `
+                <div class="post-card">
+                    <h4>${user.name || "User"}</h4>
+                    <p>${post.content || ""}</p>
+                    ${mediaHTML}
+                    <small>${time}</small>
+                    <br>
+                    <button onclick="startChat('${post.userId}')">Message</button>
+                </div>
+            `;
+        }
+    });
+}
+
+// 💬 Chat
+window.startChat = function(uid) {
+    window.location.href = "chat.html?uid=" + uid;
+};
+
+// 🔀 Navigation
+window.navigate = function(page) {
+    window.location.href = page;
+};
+
+// 🚪 Logout
+window.logout = async function() {
+    await signOut(auth);
+    window.location.href = "index.html";
+};
+
+</script>
+
+</body>
+</html>

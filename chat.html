@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Chat</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+    background: #0f172a;
+    color: white;
+}
+
+.container {
+    max-width: 600px;
+    margin: auto;
+    padding: 20px;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.back-btn {
+    cursor: pointer;
+    color: #38bdf8;
+}
+
+.chat-box {
+    height: 400px;
+    overflow-y: auto;
+    background: #1e293b;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.message {
+    margin: 8px 0;
+    padding: 10px;
+    border-radius: 10px;
+    max-width: 70%;
+    font-size: 14px;
+}
+
+.my {
+    background: #2563eb;
+    margin-left: auto;
+    text-align: right;
+}
+
+.other {
+    background: #334155;
+    text-align: left;
+}
+
+.time {
+    font-size: 10px;
+    margin-top: 4px;
+    color: #cbd5f5;
+}
+
+.input-box {
+    display: flex;
+    margin-top: 10px;
+}
+
+.input-box input {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    outline: none;
+}
+
+.input-box button {
+    padding: 10px 15px;
+    background: #38bdf8;
+    border: none;
+    cursor: pointer;
+}
+
+.empty {
+    text-align: center;
+    color: #94a3b8;
+    margin-top: 20px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <span class="back-btn" onclick="goBack()">⬅</span>
+        <h2 id="chatWith">Loading...</h2>
+    </div>
+
+    <div id="chatBox" class="chat-box"></div>
+
+    <div class="input-box">
+        <input type="text" id="msgInput" placeholder="Type message...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+</div>
+
+<script type="module">
+
+import { auth, db } from "./js/firebase-config.js";
+import { collection, addDoc, query, orderBy, onSnapshot, doc, getDoc } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { onAuthStateChanged } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+// 📌 Get receiver ID
+const params = new URLSearchParams(window.location.search);
+const receiverId = params.get("uid");
+
+let currentUserId = "";
+
+// 🔙 Back to chat list
+window.goBack = function() {
+    window.location.href = "chat-list.html";
+};
+
+// 🔐 Auth check
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        currentUserId = user.uid;
+
+        if (!receiverId) {
+            alert("No chat selected!");
+            window.location.href = "chat-list.html";
+            return;
+        }
+
+        loadReceiverInfo();
+        loadMessages();
+        document.getElementById("msgInput").focus();
+
+    } else {
+        window.location.href = "index.html";
+    }
+});
+
+// 👤 Load receiver name
+async function loadReceiverInfo() {
+    const snap = await getDoc(doc(db, "users", receiverId));
+
+    if (snap.exists()) {
+        const data = snap.data();
+        document.getElementById("chatWith").innerText =
+            data.name || "User";
+    } else {
+        document.getElementById("chatWith").innerText = "Unknown User";
+    }
+}
+
+// 📤 Send message
+window.sendMessage = async function () {
+
+    const input = document.getElementById("msgInput");
+    const text = input.value.trim();
+
+    if (!text) return;
+
+    await addDoc(collection(db, "messages"), {
+        senderId: currentUserId,
+        receiverId: receiverId,
+        text: text,
+        timestamp: Date.now()
+    });
+
+    input.value = "";
+};
+
+// 📥 Load messages
+function loadMessages() {
+
+    const q = query(collection(db, "messages"), orderBy("timestamp"));
+
+    onSnapshot(q, (snapshot) => {
+
+        const chatBox = document.getElementById("chatBox");
+        let hasMessages = false;
+        chatBox.innerHTML = "";
+
+        snapshot.forEach((docSnap) => {
+            const msg = docSnap.data();
+
+            const isChat =
+                (msg.senderId === currentUserId && msg.receiverId === receiverId) ||
+                (msg.senderId === receiverId && msg.receiverId === currentUserId);
+
+            if (isChat) {
+                hasMessages = true;
+
+                const isMe = msg.senderId === currentUserId;
+
+                const time = new Date(msg.timestamp)
+                    .toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+                chatBox.innerHTML += `
+                    <div class="message ${isMe ? "my" : "other"}">
+                        ${msg.text}
+                        <div class="time">${time}</div>
+                    </div>
+                `;
+            }
+        });
+
+        if (!hasMessages) {
+            chatBox.innerHTML = `<div class="empty">No messages yet 👋</div>`;
+        }
+
+        chatBox.scrollTo({
+            top: chatBox.scrollHeight,
+            behavior: "smooth"
+        });
+    });
+}
+
+// ⌨️ Enter key send
+document.getElementById("msgInput").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+        sendMessage();
+    }
+});
+
+</script>
+
+</body>
+</html>

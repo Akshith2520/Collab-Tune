@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Create Post</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0f172a;
+  color: white;
+}
+
+.container {
+  max-width: 600px;
+  margin: auto;
+  padding: 20px;
+}
+
+textarea {
+  width: 100%;
+  height: 120px;
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+}
+
+input[type="file"] {
+  margin-top: 10px;
+  color: white;
+}
+
+.preview {
+  margin-top: 10px;
+}
+
+.preview img,
+.preview video {
+  width: 100%;
+  border-radius: 8px;
+}
+
+button {
+  margin-top: 10px;
+  padding: 10px 15px;
+  background: #38bdf8;
+  border: none;
+  cursor: pointer;
+}
+
+.back {
+  cursor: pointer;
+  color: #38bdf8;
+  margin-bottom: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="back" onclick="goBack()">⬅ Back</div>
+
+  <h2>Create Post</h2>
+
+  <textarea id="postContent" placeholder="Looking for guitarist 🎸..."></textarea>
+
+  <!-- 📁 Media Upload -->
+  <input type="file" id="mediaFile" accept="image/*,video/*">
+
+  <!-- 👀 Preview -->
+  <div id="preview" class="preview"></div>
+
+  <button onclick="createPost()">Post</button>
+
+</div>
+
+<script type="module">
+
+import { auth, db, storage } from "./js/firebase-config.js";
+
+import { collection, addDoc } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+import { ref, uploadBytes, getDownloadURL } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+import { onAuthStateChanged } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+let currentUserId = "";
+
+// 🔙 Back
+window.goBack = () => window.location.href = "home.html";
+
+// 🔐 Auth check
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    currentUserId = user.uid;
+  } else {
+    window.location.href = "index.html";
+  }
+});
+
+// 👀 Preview logic
+const fileInput = document.getElementById("mediaFile");
+const preview = document.getElementById("preview");
+
+fileInput.addEventListener("change", () => {
+  const file = fileInput.files[0];
+  preview.innerHTML = "";
+
+  if (!file) return;
+
+  const url = URL.createObjectURL(file);
+
+  if (file.type.startsWith("image")) {
+    preview.innerHTML = `<img src="${url}">`;
+  } else if (file.type.startsWith("video")) {
+    preview.innerHTML = `
+      <video controls>
+        <source src="${url}">
+      </video>
+    `;
+  }
+});
+
+// 🚀 Create Post
+window.createPost = async function () {
+
+  const text = document.getElementById("postContent").value.trim();
+  const file = fileInput.files[0];
+
+  if (!text && !file) {
+    alert("Write something or upload media!");
+    return;
+  }
+
+  let mediaURL = "";
+  let mediaType = "";
+
+  // 📤 Upload media
+  if (file) {
+    try {
+      const storageRef = ref(storage, "posts/" + Date.now() + "_" + file.name);
+
+      await uploadBytes(storageRef, file);
+      mediaURL = await getDownloadURL(storageRef);
+
+      mediaType = file.type.startsWith("video") ? "video" : "image";
+
+    } catch (error) {
+      console.error("Upload failed:", error);
+      alert("Media upload failed");
+      return;
+    }
+  }
+
+  // 📝 Save post
+  await addDoc(collection(db, "posts"), {
+    userId: currentUserId,
+    content: text,
+    mediaURL: mediaURL,
+    mediaType: mediaType,
+    timestamp: Date.now()
+  });
+
+  alert("Posted 🎉");
+
+  // 🔄 Reset UI
+  document.getElementById("postContent").value = "";
+  fileInput.value = "";
+  preview.innerHTML = "";
+
+  window.location.href = "home.html";
+};
+
+</script>
+
+</body>
+</html>
