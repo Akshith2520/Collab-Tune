@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -9,51 +9,107 @@
 body {
   margin: 0;
   font-family: Arial;
-  background: #0f172a;
+  background: linear-gradient(135deg, #0f172a, #020617);
   color: white;
 }
 
+/* 📦 CONTAINER */
 .container {
   max-width: 600px;
   margin: auto;
   padding: 20px;
 }
 
-textarea {
-  width: 100%;
-  height: 120px;
-  padding: 10px;
-  border-radius: 6px;
-  border: none;
+/* 🔙 BACK */
+.back {
+  cursor: pointer;
+  color: #38bdf8;
+  margin-bottom: 15px;
+  display: inline-block;
 }
 
-input[type="file"] {
-  margin-top: 10px;
+/* 🧊 CARD */
+.card {
+  background: rgba(30, 41, 59, 0.8);
+  padding: 20px;
+  border-radius: 15px;
+  backdrop-filter: blur(10px);
+}
+
+/* ✏️ TEXTAREA */
+textarea {
+  width: 100%;
+  height: 140px;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  resize: none;
+  font-size: 15px;
+  background: #0f172a;
   color: white;
 }
 
+/* 📁 FILE INPUT */
+.file-box {
+  margin-top: 15px;
+  border: 2px dashed #38bdf8;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.file-box:hover {
+  background: rgba(56, 189, 248, 0.1);
+}
+
+input[type="file"] {
+  display: none;
+}
+
+/* 👀 PREVIEW */
 .preview {
-  margin-top: 10px;
+  margin-top: 15px;
 }
 
 .preview img,
 .preview video {
   width: 100%;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
+.preview audio {
+  width: 100%;
+}
+
+/* 🚀 BUTTON */
 button {
-  margin-top: 10px;
-  padding: 10px 15px;
-  background: #38bdf8;
+  width: 100%;
+  margin-top: 15px;
+  padding: 12px;
+  border-radius: 25px;
   border: none;
+  background: linear-gradient(135deg, #38bdf8, #8b5cf6);
+  color: white;
+  font-size: 16px;
   cursor: pointer;
+  transition: 0.2s;
 }
 
-.back {
-  cursor: pointer;
-  color: #38bdf8;
-  margin-bottom: 10px;
+button:hover {
+  transform: scale(1.03);
+}
+
+button:disabled {
+  background: gray;
+}
+
+/* 📱 MOBILE */
+@media(max-width:600px){
+  .container {
+    padding: 15px;
+  }
 }
 </style>
 </head>
@@ -62,50 +118,48 @@ button {
 
 <div class="container">
 
-  <div class="back" onclick="goBack()">⬅ Back</div>
+<div class="back" onclick="goBack()">⬅ Back</div>
 
-  <h2>Create Post</h2>
+<div class="card">
 
-  <textarea id="postContent" placeholder="Looking for guitarist 🎸..."></textarea>
+<h2>Create Post</h2>
 
-  <!-- 📁 Media Upload -->
-  <input type="file" id="mediaFile" accept="image/*,video/*">
+<textarea id="postContent" placeholder="Share your vibe 🎸..."></textarea>
 
-  <!-- 👀 Preview -->
-  <div id="preview" class="preview"></div>
+<!-- 📁 FILE UI -->
+<label class="file-box">
+  Upload Image / Video / Audio 🎬
+  <input type="file" id="mediaFile" accept="image/*,video/*,audio/*">
+</label>
 
-  <button onclick="createPost()">Post</button>
+<div id="preview" class="preview"></div>
+
+<button id="postBtn" onclick="createPost()">Post</button>
+
+</div>
 
 </div>
 
 <script type="module">
 
-import { auth, db, storage } from "./js/firebase-config.js";
-
+import { auth, db } from "./js/firebase-config.js";
 import { collection, addDoc } 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-import { ref, uploadBytes, getDownloadURL } 
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-
 import { onAuthStateChanged } 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 let currentUserId = "";
 
-// 🔙 Back
+/* 🔙 */
 window.goBack = () => window.location.href = "home.html";
 
-// 🔐 Auth check
+/* 🔐 AUTH */
 onAuthStateChanged(auth, (user) => {
-  if (user) {
-    currentUserId = user.uid;
-  } else {
-    window.location.href = "index.html";
-  }
+  if (user) currentUserId = user.uid;
+  else window.location.href = "index.html";
 });
 
-// 👀 Preview logic
+/* 👀 PREVIEW */
 const fileInput = document.getElementById("mediaFile");
 const preview = document.getElementById("preview");
 
@@ -119,63 +173,72 @@ fileInput.addEventListener("change", () => {
 
   if (file.type.startsWith("image")) {
     preview.innerHTML = `<img src="${url}">`;
-  } else if (file.type.startsWith("video")) {
-    preview.innerHTML = `
-      <video controls>
-        <source src="${url}">
-      </video>
-    `;
+  } 
+  else if (file.type.startsWith("video")) {
+    preview.innerHTML = `<video controls src="${url}"></video>`;
+  } 
+  else if (file.type.startsWith("audio")) {
+    preview.innerHTML = `<audio controls src="${url}"></audio>`;
   }
 });
 
-// 🚀 Create Post
+/* 🚀 POST */
 window.createPost = async function () {
+
+  const btn = document.getElementById("postBtn");
+  btn.disabled = true;
+  btn.innerText = "Posting...";
 
   const text = document.getElementById("postContent").value.trim();
   const file = fileInput.files[0];
 
   if (!text && !file) {
     alert("Write something or upload media!");
+    btn.disabled = false;
+    btn.innerText = "Post";
     return;
   }
 
   let mediaURL = "";
   let mediaType = "";
 
-  // 📤 Upload media
   if (file) {
     try {
-      const storageRef = ref(storage, "posts/" + Date.now() + "_" + file.name);
 
-      await uploadBytes(storageRef, file);
-      mediaURL = await getDownloadURL(storageRef);
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", "Collab-Tune");
 
-      mediaType = file.type.startsWith("video") ? "video" : "image";
+      const res = await fetch(
+        "https://api.cloudinary.com/v1_1/dcnlky6zb/upload",
+        { method: "POST", body: formData }
+      );
 
-    } catch (error) {
-      console.error("Upload failed:", error);
-      alert("Media upload failed");
+      const data = await res.json();
+      mediaURL = data.secure_url;
+
+      if (file.type.startsWith("image")) mediaType = "image";
+      else if (file.type.startsWith("video")) mediaType = "video";
+      else if (file.type.startsWith("audio")) mediaType = "audio";
+
+    } catch (err) {
+      alert("Upload failed ❌");
+      btn.disabled = false;
+      btn.innerText = "Post";
       return;
     }
   }
 
-  // 📝 Save post
   await addDoc(collection(db, "posts"), {
     userId: currentUserId,
     content: text,
-    mediaURL: mediaURL,
-    mediaType: mediaType,
+    mediaURL,
+    mediaType,
     timestamp: Date.now()
   });
 
   alert("Posted 🎉");
-
-  // 🔄 Reset UI
-  document.getElementById("postContent").value = "";
-  fileInput.value = "";
-  preview.innerHTML = "";
-
-  window.location.href = "home.html";
+  location.href = "home.html";
 };
 
 </script>

@@ -2,194 +2,198 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Profile</title>
+<title>Profile Test</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
+    font-family: Arial;
     background: #0f172a;
     color: white;
 }
 
 .container {
-    max-width: 700px;
-    margin: 40px auto;
+    max-width: 600px;
+    margin: auto;
     padding: 20px;
 }
 
-.profile-card {
-    background: #1e293b;
-    padding: 25px;
-    border-radius: 10px;
-}
-
-h2 {
-    margin-top: 0;
-}
-
-input, textarea, select {
+input, textarea {
     width: 100%;
     padding: 10px;
-    margin: 8px 0;
-    border-radius: 5px;
+    margin: 6px 0;
+    border-radius: 8px;
     border: none;
-}
-
-textarea {
-    resize: none;
-    height: 80px;
 }
 
 button {
-    padding: 10px 15px;
+    padding: 10px;
+    background: #38bdf8;
     border: none;
-    border-radius: 5px;
-    background: #2563eb;
-    color: white;
     cursor: pointer;
-}
-
-button:hover {
-    background: #1d4ed8;
-}
-
-.profile-view p {
-    margin: 8px 0;
-}
-
-.top-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.back {
-    cursor: pointer;
-    color: #38bdf8;
-}
-
-@media (max-width: 600px) {
-    .container {
-        padding: 10px;
-    }
 }
 </style>
 </head>
+
 <body>
 
 <div class="container">
 
-<div class="top-bar">
-    <div class="back" onclick="goHome()">⬅ Back</div>
-    <button onclick="toggleEdit()">Edit Profile</button>
-</div>
+<h2>Profile Test</h2>
 
-<div class="profile-card">
+<input id="name" placeholder="Name">
+<input id="phone" placeholder="Phone">
+<input id="domain" placeholder="Domain">
+<input id="location" placeholder="Location">
+<input id="experience" placeholder="Experience">
+<textarea id="bio" placeholder="Bio"></textarea>
 
-    <div id="viewMode" class="profile-view"></div>
+<input type="file" id="profilePic">
 
-    <div id="editMode" style="display:none;">
-        <input type="text" id="name" placeholder="Full Name">
-        <input type="text" id="phone" placeholder="Phone Number">
-        <select id="domain">
-            <option value="">Select Domain</option>
-            <option>Guitarist</option>
-            <option>Pianist</option>
-            <option>Singer</option>
-            <option>Drummer</option>
-            <option>Violinist</option>
-            <option>Composer</option>
-        </select>
-        <input type="text" id="location" placeholder="Location">
-        <input type="text" id="experience" placeholder="Years of Experience">
-        <textarea id="bio" placeholder="Short Bio"></textarea>
+<button onclick="saveProfile()">Save</button>
 
-        <button onclick="saveProfile()">Save</button>
-    </div>
+<p id="status"></p>
 
-</div>
 </div>
 
 <script type="module">
-import { onAuthStateChanged } 
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-import { doc, getDoc, updateDoc } 
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 import { auth, db } from "./js/firebase-config.js";
 
-let currentUser;
+import { 
+doc, getDoc, setDoc 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-        window.location.href = "index.html";
-    } else {
-        currentUser = user;
-        loadProfile();
+import { onAuthStateChanged } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+let currentUser;
+let uploadedImageURL = "";
+
+/* 📦 GET ELEMENTS SAFELY */
+const nameInput = document.getElementById("name");
+const phoneInput = document.getElementById("phone");
+const domainInput = document.getElementById("domain");
+const locationInput = document.getElementById("location");
+const experienceInput = document.getElementById("experience");
+const bioInput = document.getElementById("bio");
+
+const profilePicInput = document.getElementById("profilePic");
+const profileImg = document.getElementById("profileImg");
+const statusText = document.getElementById("status");
+
+/* 🔐 AUTH */
+onAuthStateChanged(auth, async user=>{
+    if(!user){
+        alert("Not logged in ❌");
+        location.href="index.html";
+        return;
     }
+
+    currentUser = user;
+
+    console.log("Logged in UID:", user.uid);
+
+    loadProfile();
 });
 
-async function loadProfile() {
-    const docRef = doc(db, "users", currentUser.uid);
-    const docSnap = await getDoc(docRef);
+/* 📥 LOAD PROFILE */
+async function loadProfile(){
 
-    if (docSnap.exists()) {
-        const data = docSnap.data();
+    const snap = await getDoc(doc(db,"users",currentUser.uid));
+    const d = snap.data() || {};
 
-        document.getElementById("viewMode").innerHTML = `
-            <h2>${data.name || "No Name"}</h2>
-            <p><strong>Email:</strong> ${currentUser.email}</p>
-            <p><strong>Phone:</strong> ${data.phone || "-"}</p>
-            <p><strong>Domain:</strong> ${data.domain || "-"}</p>
-            <p><strong>Location:</strong> ${data.location || "-"}</p>
-            <p><strong>Experience:</strong> ${data.experience || "-"}</p>
-            <p><strong>Bio:</strong> ${data.bio || "-"}</p>
-        `;
+    nameInput.value = d.name || "";
+    phoneInput.value = d.phone || "";
+    domainInput.value = d.domain || "";
+    locationInput.value = d.location || "";
+    experienceInput.value = d.experience || "";
+    bioInput.value = d.bio || "";
 
-        // Prefill edit form
-        document.getElementById("name").value = data.name || "";
-        document.getElementById("phone").value = data.phone || "";
-        document.getElementById("domain").value = data.domain || "";
-        document.getElementById("location").value = data.location || "";
-        document.getElementById("experience").value = data.experience || "";
-        document.getElementById("bio").value = data.bio || "";
+    if (profileImg && d.profileImage) {
+        profileImg.src = d.profileImage;
     }
 }
 
-window.toggleEdit = function() {
-    const edit = document.getElementById("editMode");
-    const view = document.getElementById("viewMode");
+/* 📸 IMAGE UPLOAD */
+if (profilePicInput) {
+profilePicInput.addEventListener("change", async function(){
 
-    if (edit.style.display === "none") {
-        edit.style.display = "block";
-        view.style.display = "none";
-    } else {
-        edit.style.display = "none";
-        view.style.display = "block";
+    const file = this.files[0];
+    if(!file) return;
+
+    console.log("Uploading image...");
+
+    // 👀 Preview
+    if (profileImg) {
+        profileImg.src = URL.createObjectURL(file);
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "Collab-Tune");
+
+    try {
+        const res = await fetch(
+            "https://api.cloudinary.com/v1_1/dcnlky6zb/upload",
+            { method: "POST", body: formData }
+        );
+
+        const data = await res.json();
+
+        uploadedImageURL = data.secure_url;
+
+        console.log("Image uploaded:", uploadedImageURL);
+
+    } catch(err){
+        console.error("Cloudinary error:", err);
+    }
+});
+}
+
+/* 💾 SAVE PROFILE */
+window.saveProfile = async function(){
+
+    try {
+
+        console.log("Saving profile...");
+
+        if (statusText) statusText.innerText = "Saving...";
+
+        const snap = await getDoc(doc(db,"users",currentUser.uid));
+        const existing = snap.data() || {};
+
+        let finalImage = existing.profileImage || "";
+
+        if(uploadedImageURL){
+            finalImage = uploadedImageURL;
+        }
+
+        await setDoc(doc(db,"users",currentUser.uid),{
+            name: nameInput.value || "",
+            phone: phoneInput.value || "",
+            domain: domainInput.value || "",
+            location: locationInput.value || "",
+            experience: experienceInput.value || "",
+            bio: bioInput.value || "",
+            profileImage: finalImage
+        }, { merge: true });
+
+        console.log("Saved ✅");
+
+        if (statusText) statusText.innerText = "Saved successfully ✅";
+
+        uploadedImageURL = "";
+
+    } catch (error) {
+
+        console.error("SAVE ERROR:", error);
+
+        if (statusText) statusText.innerText = "Error: " + error.message;
     }
 };
 
-window.saveProfile = async function() {
-    await updateDoc(doc(db, "users", currentUser.uid), {
-        name: document.getElementById("name").value,
-        phone: document.getElementById("phone").value,
-        domain: document.getElementById("domain").value,
-        location: document.getElementById("location").value,
-        experience: document.getElementById("experience").value,
-        bio: document.getElementById("bio").value
-    });
-
-    toggleEdit();
-    loadProfile();
-};
-
-window.goHome = function() {
-    window.location.href = "home.html";
-};
 </script>
 
 </body>

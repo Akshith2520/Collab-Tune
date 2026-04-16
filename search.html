@@ -8,22 +8,24 @@
 <style>
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
-    background: #0f172a;
+    font-family: Arial;
+    background: linear-gradient(135deg, #0f172a, #020617);
     color: white;
 }
 
-.navbar {
-    background: #111827;
-    padding: 10px 20px;
-}
-
+/* 📦 CONTAINER */
 .container {
-    max-width: 700px;
-    margin: 30px auto;
-    padding: 0 15px;
+    max-width: 900px;
+    margin: auto;
+    padding: 20px;
 }
 
+/* 🔝 TITLE */
+h2 {
+    margin-bottom: 15px;
+}
+
+/* 🔍 SEARCH BOX */
 .search-box {
     display: flex;
     gap: 10px;
@@ -32,115 +34,214 @@ body {
 
 .search-box input {
     flex: 1;
-    padding: 10px;
-    border-radius: 5px;
+    padding: 12px;
+    border-radius: 25px;
     border: none;
+    background: #0f172a;
+    color: white;
+    outline: none;
+}
+
+.search-box input:focus {
+    box-shadow: 0 0 10px #38bdf8;
 }
 
 .search-box button {
-    padding: 10px;
+    padding: 12px 18px;
+    border-radius: 25px;
     border: none;
-    background: #2563eb;
+    background: linear-gradient(135deg, #38bdf8, #8b5cf6);
     color: white;
-    border-radius: 5px;
     cursor: pointer;
 }
 
+/* 🧱 GRID */
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 15px;
+}
+
+/* 👤 CARD */
 .card {
-    background: #1e293b;
+    background: rgba(30, 41, 59, 0.8);
     padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 15px;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    transition: 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+/* 👤 PROFILE IMAGE */
+.card img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* 🧾 TEXT */
+.card h3 {
+    margin: 10px 0 5px;
+}
+
+.card p {
+    font-size: 14px;
+    color: #cbd5f5;
+}
+
+/* 🎯 BUTTONS */
+.btn-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.btn {
+    flex: 1;
+    padding: 8px;
+    border-radius: 20px;
+    border: none;
+    cursor: pointer;
 }
 
 .message-btn {
-    margin-top: 10px;
-    padding: 8px 12px;
     background: #38bdf8;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    color: black;
-    font-weight: bold;
+}
+
+.profile-btn {
+    background: #8b5cf6;
+}
+
+/* 📱 MOBILE */
+@media(max-width:600px){
+    .container {
+        padding: 15px;
+    }
 }
 </style>
 </head>
 
 <body>
 
-<div class="navbar">
-    <h2>Search Musicians</h2>
-</div>
-
 <div class="container">
 
-    <!-- SEARCH INPUT -->
-    <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Enter role (Singer)">
-        <button onclick="searchUsers()">Search</button>
-    </div>
+<h2>🔍 Search Musicians</h2>
 
-    <!-- RESULTS -->
-    <div id="results"></div>
+<div class="search-box">
+    <input type="text" id="searchInput" placeholder="Singer / Guitarist / Name">
+    <button id="searchBtn">Search</button>
+</div>
+
+<div id="results" class="results-grid"></div>
 
 </div>
 
 <script type="module">
 
 import { db } from "./js/firebase-config.js";
-import { collection, query, where, getDocs } 
+import { collection, getDocs } 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// 🔍 Get role from URL
+/* 🔥 NORMALIZE */
+function normalize(text) {
+    return (text || "").toLowerCase().trim();
+}
+
+/* 🔥 SMART KEYWORDS */
+function smartKeyword(text) {
+    if (text.includes("guitar")) return "guitar";
+    if (text.includes("sing")) return "sing";
+    if (text.includes("piano")) return "piano";
+    if (text.includes("drum")) return "drum";
+    if (text.includes("violin")) return "violin";
+    return text;
+}
+
+/* 🔍 SEARCH */
+async function searchUsers() {
+
+    const raw = document.getElementById("searchInput").value;
+
+    if (!raw.trim()) {
+        alert("Enter something");
+        return;
+    }
+
+    const input = smartKeyword(normalize(raw));
+
+    const snapshot = await getDocs(collection(db, "users"));
+    const results = document.getElementById("results");
+
+    results.innerHTML = "";
+
+    let found = false;
+
+    snapshot.forEach((docSnap) => {
+
+        const user = docSnap.data();
+        const uid = docSnap.id;
+
+        const instrument = normalize(user.instrument);
+        const role = normalize(user.role);
+        const name = normalize(user.name);
+
+        if (
+            instrument.includes(input) ||
+            role.includes(input) ||
+            name.includes(input)
+        ) {
+            found = true;
+
+            results.innerHTML += `
+                <div class="card">
+                    <img src="${user.profileImage || 'https://via.placeholder.com/60'}">
+
+                    <h3>${user.name || "User"}</h3>
+
+                    <p><strong>Role:</strong> ${user.role || "Not added"}</p>
+                    <p><strong>Instrument:</strong> ${user.instrument || ""}</p>
+                    <p>${user.bio || ""}</p>
+
+                    <div class="btn-row">
+                        <button class="btn message-btn" onclick="startChat('${uid}')">💬</button>
+                        <button class="btn profile-btn" onclick="viewProfile('${uid}')">👤</button>
+                    </div>
+                </div>
+            `;
+        }
+    });
+
+    if (!found) {
+        results.innerHTML = `<p>No users found 😢</p>`;
+    }
+}
+
+/* 🔘 BUTTON */
+searchBtn.addEventListener("click", searchUsers);
+
+/* ⌨️ ENTER */
+searchInput.addEventListener("keypress", e => {
+    if (e.key === "Enter") searchUsers();
+});
+
+/* 🔗 AUTO SEARCH */
 const params = new URLSearchParams(window.location.search);
 const roleFromURL = params.get("role");
 
 if (roleFromURL) {
-    document.getElementById("searchInput").value = roleFromURL;
+    searchInput.value = roleFromURL;
     searchUsers();
 }
 
-// 🔎 Search Function
-window.searchUsers = async function () {
+/* 💬 CHAT */
+window.startChat = uid => location.href = "chat.html?uid=" + uid;
 
-    const role = document.getElementById("searchInput").value.trim().toLowerCase();
-
-    if (!role) {
-        alert("Enter role to search");
-        return;
-    }
-
-    const q = query(collection(db, "users"), where("role", "==", role));
-    const snapshot = await getDocs(q);
-
-    const results = document.getElementById("results");
-    results.innerHTML = "";
-
-    if (snapshot.empty) {
-        results.innerHTML = "<p>No users found 😢</p>";
-        return;
-    }
-
-    snapshot.forEach((docSnap) => {
-        const user = docSnap.data();
-
-        results.innerHTML += `
-            <div class="card">
-                <h3>${user.name}</h3>
-                <p><strong>Role:</strong> ${user.role}</p>
-                <p><strong>Bio:</strong> ${user.bio || "No bio"}</p>
-                <button class="message-btn" onclick="startChat('${docSnap.id}')">
-                    Message
-                </button>
-            </div>
-        `;
-    });
-};
-
-// 💬 Start Chat
-window.startChat = function (userId) {
-    window.location.href = "chat.html?uid=" + userId;
-};
+/* 👤 PROFILE */
+window.viewProfile = uid => location.href = "profile.html?uid=" + uid;
 
 </script>
 

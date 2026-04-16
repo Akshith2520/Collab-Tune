@@ -1,82 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Music Collaboration Platform - Login</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>CollabTune - Login</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: linear-gradient(to right, #1f1c2c, #928dab);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+    background: linear-gradient(135deg, #0f172a, #020617);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
 
-        .login-container {
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            width: 350px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-        }
+/* 🌟 CONTAINER */
+.login-container {
+    width: 350px;
+    padding: 30px;
+    border-radius: 15px;
+    background: rgba(30, 41, 59, 0.8);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    text-align: center;
+}
 
-        .login-container h2 {
-            text-align: center;
-            margin-bottom: 25px;
-        }
+/* 🎸 TITLE */
+.title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
 
-        input {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
+.subtitle {
+    font-size: 14px;
+    color: #94a3b8;
+    margin-bottom: 20px;
+}
 
-        button {
-            width: 100%;
-            padding: 12px;
-            margin-top: 15px;
-            border: none;
-            border-radius: 5px;
-            background-color: #5a67d8;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-        }
+/* ✏️ INPUTS */
+input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 10px;
+    border: none;
+    background: #0f172a;
+    color: white;
+    outline: none;
+    transition: 0.2s;
+}
 
-        button:hover {
-            background-color: #434190;
-        }
+input:focus {
+    box-shadow: 0 0 10px #38bdf8;
+}
 
-        .signup-link {
-            text-align: center;
-            margin-top: 15px;
-        }
+/* 🚀 BUTTON */
+button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 15px;
+    border: none;
+    border-radius: 25px;
+    background: linear-gradient(135deg, #38bdf8, #8b5cf6);
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.2s;
+}
 
-        .signup-link a {
-            color: #5a67d8;
-            text-decoration: none;
-        }
+button:hover {
+    transform: scale(1.05);
+}
 
-        .error {
-            color: red;
-            font-size: 14px;
-            text-align: center;
-        }
-    </style>
+/* ⚠ ERROR */
+.error {
+    color: #f87171;
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+/* 🔗 SIGNUP */
+.signup-link {
+    margin-top: 15px;
+    font-size: 14px;
+}
+
+.signup-link a {
+    color: #38bdf8;
+    text-decoration: none;
+}
+
+/* 📱 MOBILE */
+@media(max-width:400px){
+    .login-container {
+        width: 90%;
+    }
+}
+</style>
 </head>
+
 <body>
 
 <div class="login-container">
-    <h2>Login</h2>
 
-    <input type="email" id="email" placeholder="Enter Email" required>
-    <input type="password" id="password" placeholder="Enter Password" required>
+    <div class="title">🎸 CollabTune</div>
+    <div class="subtitle">Connect. Create. Collaborate.</div>
+
+    <input type="email" id="email" placeholder="Enter Email">
+    <input type="password" id="password" placeholder="Enter Password">
 
     <button onclick="login()">Login</button>
 
@@ -86,30 +120,34 @@
         Don't have an account? 
         <a href="signup.html">Sign Up</a>
     </div>
+
 </div>
 
 <script type="module">
-    import { signInWithEmailAndPassword } 
-    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-    import { auth } from "./js/firebase-config.js";
+import { signInWithEmailAndPassword } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-    window.login = async function() {
-        const email = document.getElementById("email").value;
-        const password = document.getElementById("password").value;
+import { auth } from "./js/firebase-config.js";
 
-        if (!email || !password) {
-            document.getElementById("errorMsg").innerText = "Please enter email and password";
-            return;
-        }
+window.login = async function() {
 
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-            window.location.href = "home.html";
-        } catch (error) {
-            document.getElementById("errorMsg").innerText = error.message;
-        }
-    };
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    if (!email || !password) {
+        errorMsg.innerText = "Please enter email and password";
+        return;
+    }
+
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+        window.location.href = "home.html";
+    } catch (error) {
+        errorMsg.innerText = "Invalid login credentials ❌";
+    }
+};
+
 </script>
 
 </body>

@@ -8,70 +8,167 @@
 <style>
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
-    background: #0f172a;
+    font-family: Arial;
+    background: linear-gradient(135deg, #0f172a, #020617);
     color: white;
 }
 
+/* 🔥 NAVBAR */
 .navbar {
-    background: #111827;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(17, 24, 39, 0.9);
+    backdrop-filter: blur(10px);
     display: flex;
     justify-content: space-between;
-    padding: 10px 20px;
+    align-items: center;
+    padding: 12px 20px;
 }
 
 .nav-link {
     cursor: pointer;
     font-weight: bold;
+    transition: 0.2s;
 }
 
 .nav-link:hover {
     color: #38bdf8;
 }
 
+.nav-center input {
+    padding: 8px 12px;
+    border-radius: 20px;
+    border: none;
+    width: 200px;
+}
+
+/* 📦 CONTAINER */
 .container {
     max-width: 700px;
-    margin: 30px auto;
-    padding: 0 15px;
-}
-
-.profile-box {
-    background: #1e293b;
+    margin: auto;
     padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 20px;
 }
 
+/* 👤 PROFILE */
+.profile-box {
+    background: rgba(30, 41, 59, 0.8);
+    padding: 15px;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+}
+
+/* 🎯 BUTTONS */
 .action-buttons {
     display: flex;
-    justify-content: space-between;
-    margin-bottom: 20px;
+    gap: 10px;
+    margin: 15px 0;
 }
 
 .action-buttons button {
+    flex: 1;
     padding: 10px;
+    border-radius: 25px;
     border: none;
-    background: #2563eb;
+    background: linear-gradient(135deg, #38bdf8, #8b5cf6);
     color: white;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.action-buttons button:hover {
+    transform: scale(1.05);
+}
+
+/* 📝 POST */
+.post-card {
+    background: rgba(30, 41, 59, 0.8);
+    padding: 15px;
+    border-radius: 15px;
+    margin-bottom: 15px;
+    backdrop-filter: blur(10px);
+}
+
+/* 👤 USER */
+.user-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-row img {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
     cursor: pointer;
 }
 
-.post-card {
-    background: #1e293b;
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-}
-
+/* 🎬 MEDIA */
 .post-media {
     width: 100%;
     margin-top: 10px;
+    border-radius: 12px;
+}
+
+/* ❤️ ACTIONS */
+.post-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.post-actions button {
+    flex: 1;
+    padding: 8px;
+    border-radius: 20px;
+    border: none;
+    cursor: pointer;
+    background: #111827;
+    color: white;
+}
+
+.post-actions button:hover {
+    background: #1e293b;
+}
+
+/* 💬 COMMENTS */
+.comment-box {
+    margin-top: 10px;
+    display: flex;
+    gap: 5px;
+}
+
+.comment-box input {
+    flex: 1;
+    padding: 8px;
+    border-radius: 20px;
+    border: none;
+}
+
+.comment-box button {
+    border-radius: 20px;
+    padding: 6px 10px;
+}
+
+.comment {
+    margin-top: 5px;
+    font-size: 13px;
+    background: #111827;
+    padding: 6px;
     border-radius: 8px;
 }
 
-.empty-feed {
-    text-align: center;
-    color: #94a3b8;
+.delete-btn {
+    color: red;
+    cursor: pointer;
+    margin-left: 5px;
+}
+
+/* 📱 MOBILE */
+@media(max-width:600px){
+    .nav-center input {
+        width: 120px;
+    }
 }
 </style>
 </head>
@@ -80,27 +177,29 @@ body {
 
 <div class="navbar">
     <div class="nav-link" onclick="navigate('profile.html')">Profile</div>
-    <div class="nav-link" onclick="navigate('chat-list.html')">Messages</div>
+
+    <div class="nav-center">
+        <input type="text" id="searchInput" placeholder="Search">
+    </div>
+
+    <div class="nav-link" onclick="navigate('chat.html')">Messages</div>
     <div class="nav-link" onclick="logout()">Logout</div>
 </div>
 
 <div class="container">
 
-    <!-- Profile -->
-    <div class="profile-box">
-        <h2 id="welcome">Loading...</h2>
-        <p id="userRole"></p>
-        <p id="userBio"></p>
-    </div>
+<div class="profile-box">
+    <h2 id="welcome"></h2>
+    <p id="userRole"></p>
+    <p id="userBio"></p>
+</div>
 
-    <!-- Buttons -->
-    <div class="action-buttons">
-        <button onclick="navigate('createpost.html')">Create Post</button>
-        <button onclick="navigate('explore.html')">Explore</button>
-    </div>
+<div class="action-buttons">
+    <button onclick="navigate('createpost.html')">Create</button>
+    <button onclick="navigate('explore.html')">Explore</button>
+</div>
 
-    <!-- Feed -->
-    <div id="feed"></div>
+<div id="feed"></div>
 
 </div>
 
@@ -108,105 +207,149 @@ body {
 
 import { auth, db } from "./js/firebase-config.js";
 import { 
-    doc, getDoc, collection, query, orderBy, onSnapshot 
+doc, getDoc, collection, query, orderBy, onSnapshot, updateDoc, deleteDoc 
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+import { arrayUnion, arrayRemove } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
 import { onAuthStateChanged, signOut } 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// 🔐 Auth check
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        loadProfile(user.uid);
-        loadPosts();
-    } else {
-        window.location.href = "index.html";
+searchInput.addEventListener("keypress", e=>{
+    if(e.key==="Enter"){
+        location.href="search.html?role="+e.target.value;
     }
 });
 
-// 👤 Load profile
-async function loadProfile(uid) {
-    const snap = await getDoc(doc(db, "users", uid));
+onAuthStateChanged(auth, async user=>{
+    if(user){
+        loadProfile(user.uid);
+        loadPosts();
+    }else location.href="index.html";
+});
 
-    if (snap.exists()) {
-        const data = snap.data();
-
-        document.getElementById("welcome").innerText = "Welcome " + data.name;
-        document.getElementById("userRole").innerText = "Role: " + (data.role || "Not added");
-        document.getElementById("userBio").innerText = "Bio: " + (data.bio || "No bio");
-    }
+async function loadProfile(uid){
+    const snap=await getDoc(doc(db,"users",uid));
+    const d=snap.data();
+    welcome.innerText="Welcome "+d.name;
+    userRole.innerText="Instrument: "+(d.instrument||"");
+    userBio.innerText="Bio: "+(d.bio||"");
 }
 
-// 📝 Load posts with MEDIA
-function loadPosts() {
+function loadPosts(){
 
-    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+const q=query(collection(db,"posts"),orderBy("timestamp","desc"));
 
-    onSnapshot(q, async (snapshot) => {
+onSnapshot(q, async snap=>{
 
-        const feed = document.getElementById("feed");
-        feed.innerHTML = "";
+feed.innerHTML="";
 
-        if (snapshot.empty) {
-            feed.innerHTML = `<div class="empty-feed">No posts yet 🎵</div>`;
-            return;
-        }
+for(const docSnap of snap.docs){
 
-        for (const docSnap of snapshot.docs) {
+const post=docSnap.data();
+const postId=docSnap.id;
 
-            const post = docSnap.data();
+const userSnap=await getDoc(doc(db,"users",post.userId));
+const user=userSnap.data()||{};
 
-            const userSnap = await getDoc(doc(db, "users", post.userId));
-            const user = userSnap.exists() ? userSnap.data() : {};
+const likes=post.likes||[];
+const liked=likes.includes(auth.currentUser.uid);
 
-            const time = new Date(post.timestamp)
-                .toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-
-            // 🎬 MEDIA HANDLING
-            let mediaHTML = "";
-
-            if (post.mediaURL) {
-                if (post.mediaType === "image") {
-                    mediaHTML = `
-                        <img src="${post.mediaURL}" class="post-media">
-                    `;
-                } else if (post.mediaType === "video") {
-                    mediaHTML = `
-                        <video controls class="post-media">
-                            <source src="${post.mediaURL}">
-                        </video>
-                    `;
-                }
-            }
-
-            feed.innerHTML += `
-                <div class="post-card">
-                    <h4>${user.name || "User"}</h4>
-                    <p>${post.content || ""}</p>
-                    ${mediaHTML}
-                    <small>${time}</small>
-                    <br>
-                    <button onclick="startChat('${post.userId}')">Message</button>
-                </div>
-            `;
-        }
-    });
+let media="";
+if(post.mediaURL){
+if(post.mediaType==="image") media=`<img src="${post.mediaURL}" class="post-media">`;
+else if(post.mediaType==="video") media=`<video controls class="post-media"><source src="${post.mediaURL}"></video>`;
+else if(post.mediaType==="audio") media=`<audio controls class="post-media"><source src="${post.mediaURL}"></audio>`;
 }
 
-// 💬 Chat
-window.startChat = function(uid) {
-    window.location.href = "chat.html?uid=" + uid;
+let comments="";
+(post.comments||[]).forEach(c=>{
+const isOwner=c.uid===auth.currentUser.uid;
+comments+=`
+<div class="comment">
+${c.text}
+${isOwner?`<span class="delete-btn" onclick='deleteComment("${postId}", ${JSON.stringify(c)})'>❌</span>`:""}
+</div>`;
+});
+
+feed.innerHTML+=`
+<div class="post-card">
+
+<div class="user-row">
+<img src="${user.profileImage||'https://via.placeholder.com/40'}"
+onclick="viewProfile('${post.userId}')">
+<h4 onclick="viewProfile('${post.userId}')">${user.name||"User"}</h4>
+</div>
+
+<p>${post.content||""}</p>
+
+${media}
+
+<div class="post-actions">
+<button onclick="toggleLike('${postId}')">${liked?"❤️":"🤍"} ${likes.length}</button>
+<button onclick="sharePost('${postId}')">🔗</button>
+${post.userId===auth.currentUser.uid?
+`<button onclick="deletePost('${postId}')">🗑</button>`:""}
+</div>
+
+<div class="comment-box">
+<input id="cmt-${postId}" placeholder="Write comment...">
+<button onclick="addComment('${postId}')">➤</button>
+</div>
+
+${comments}
+
+</div>`;
+}
+});
+}
+
+window.toggleLike=async id=>{
+const ref=doc(db,"posts",id);
+const snap=await getDoc(ref);
+const likes=snap.data().likes||[];
+
+if(likes.includes(auth.currentUser.uid))
+await updateDoc(ref,{likes:arrayRemove(auth.currentUser.uid)});
+else
+await updateDoc(ref,{likes:arrayUnion(auth.currentUser.uid)});
 };
 
-// 🔀 Navigation
-window.navigate = function(page) {
-    window.location.href = page;
+window.deletePost=async id=>{
+if(confirm("Delete post?"))
+await deleteDoc(doc(db,"posts",id));
 };
 
-// 🚪 Logout
-window.logout = async function() {
-    await signOut(auth);
-    window.location.href = "index.html";
+window.sharePost=id=>{
+navigator.clipboard.writeText(location.href+"?post="+id);
+alert("Link copied 🔗");
 };
+
+window.addComment=async id=>{
+const input=document.getElementById(`cmt-${id}`);
+if(!input.value.trim()) return;
+
+await updateDoc(doc(db,"posts",id),{
+comments:arrayUnion({
+uid:auth.currentUser.uid,
+text:input.value,
+time:Date.now()
+})
+});
+
+input.value="";
+};
+
+window.deleteComment=async(id,c)=>{
+await updateDoc(doc(db,"posts",id),{
+comments:arrayRemove(c)
+});
+};
+
+window.navigate=p=>location.href=p;
+window.viewProfile=id=>location.href="profile.html?uid="+id;
+window.logout=async()=>{await signOut(auth);location.href="index.html";};
 
 </script>
 
