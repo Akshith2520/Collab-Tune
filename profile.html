@@ -2,15 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Profile Test</title>
+<title>Profile</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 body {
     margin: 0;
-    font-family: Arial;
-    background: #0f172a;
-    color: white;
+    font-family: 'Segoe UI', sans-serif;
+    background: radial-gradient(circle at top, #1e293b, #020617);
+    color: #e2e8f0;
 }
 
 .container {
@@ -19,19 +19,61 @@ body {
     padding: 20px;
 }
 
-input, textarea {
-    width: 100%;
-    padding: 10px;
-    margin: 6px 0;
-    border-radius: 8px;
-    border: none;
+/* PROFILE CARD */
+.profile-card {
+    background: rgba(30,41,59,0.6);
+    padding: 20px;
+    border-radius: 20px;
+    text-align: center;
 }
 
+/* 🖼️ IMAGE FIX */
+.profile-card img {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin: auto;
+    display: block;
+    border: 3px solid #38bdf8;
+}
+
+/* BUTTON */
 button {
-    padding: 10px;
-    background: #38bdf8;
+    padding: 8px 12px;
+    margin: 5px;
     border: none;
+    border-radius: 10px;
+    background: #38bdf8;
+    color: white;
     cursor: pointer;
+}
+
+.section {
+    margin-top: 15px;
+    background: rgba(17,24,39,0.7);
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.post {
+    background: #1e293b;
+    padding: 10px;
+    border-radius: 10px;
+    margin-top: 10px;
+}
+
+/* POPUP */
+#followersPopup {
+    display: none;
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    padding: 20px;
+    border-radius: 12px;
+    width: 300px;
 }
 </style>
 </head>
@@ -40,159 +82,261 @@ button {
 
 <div class="container">
 
-<h2>Profile Test</h2>
+<div class="profile-card">
+<img id="viewImg">
+<h2 id="viewName"></h2>
+<p id="viewDomain"></p>
+<p id="viewLocation"></p>
+<p id="viewBio"></p>
 
-<input id="name" placeholder="Name">
-<input id="phone" placeholder="Phone">
-<input id="domain" placeholder="Domain">
-<input id="location" placeholder="Location">
-<input id="experience" placeholder="Experience">
-<textarea id="bio" placeholder="Bio"></textarea>
+<div>
+<span id="followersCount" style="cursor:pointer">0</span> Followers •
+<span id="followingCount">0</span> Following •
+<span id="postsCount">0</span> Posts
+</div>
 
-<input type="file" id="profilePic">
+<button id="followBtn"></button>
+<button id="messageBtn">Message</button>
+</div>
 
-<button onclick="saveProfile()">Save</button>
+<!-- POSTS -->
+<div class="section">
+<h3>Posts</h3>
+<div id="userPosts"></div>
+</div>
 
-<p id="status"></p>
+<!-- SUGGESTED -->
+<div class="section">
+<h3>Suggested Users</h3>
+<div id="suggestedUsers"></div>
+</div>
 
+<!-- ANALYTICS -->
+<div class="section">
+<h3>Analytics</h3>
+<p id="profileStats"></p>
+</div>
+
+</div>
+
+<!-- FOLLOWERS POPUP -->
+<div id="followersPopup">
+<h3>Followers</h3>
+<div id="followersList"></div>
+<button onclick="closeFollowers()">Close</button>
 </div>
 
 <script type="module">
 
 import { auth, db } from "./js/firebase-config.js";
-
-import { 
-doc, getDoc, setDoc 
+import {
+doc, getDoc, setDoc, collection, query, where, getDocs,
+updateDoc, arrayUnion, arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 import { onAuthStateChanged } 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 let currentUser;
-let uploadedImageURL = "";
 
-/* 📦 GET ELEMENTS SAFELY */
-const nameInput = document.getElementById("name");
-const phoneInput = document.getElementById("phone");
-const domainInput = document.getElementById("domain");
-const locationInput = document.getElementById("location");
-const experienceInput = document.getElementById("experience");
-const bioInput = document.getElementById("bio");
+const params = new URLSearchParams(window.location.search);
+const profileUID = params.get("uid");
 
-const profilePicInput = document.getElementById("profilePic");
-const profileImg = document.getElementById("profileImg");
-const statusText = document.getElementById("status");
-
-/* 🔐 AUTH */
+/* AUTH */
 onAuthStateChanged(auth, async user=>{
-    if(!user){
-        alert("Not logged in ❌");
-        location.href="index.html";
+    if(!user) location.href="index.html";
+    currentUser = user;
+
+    const uid = profileUID || user.uid;
+    loadProfile(uid);
+});
+
+/* LOAD PROFILE */
+async function loadProfile(uid){
+    const snap = await getDoc(doc(db,"users",uid));
+    const d = snap.data() || {};
+
+    showProfile(d, uid);
+}
+
+/* SHOW PROFILE */
+function showProfile(d, uid){
+
+    viewImg.src = d.profileImage || "";
+    viewName.innerText = d.name || "";
+    viewDomain.innerText = d.domain || "";
+    viewLocation.innerText = d.location || "";
+    viewBio.innerText = d.bio || "";
+
+    setupFollow(d, uid);
+    setupMessage(uid);
+
+    loadPosts(uid);
+    loadSuggestedUsers();
+    loadAnalytics(d);
+
+    followersCount.onclick = () => openFollowers(uid);
+}
+
+/* FOLLOW SYSTEM */
+function setupFollow(d, uid){
+
+    const myId = currentUser.uid;
+
+    const followers = Array.isArray(d.followers) ? d.followers : [];
+    const following = Array.isArray(d.following) ? d.following : [];
+
+    followersCount.innerText = followers.length;
+    followingCount.innerText = following.length;
+
+    if(uid === myId){
+        followBtn.style.display = "none";
         return;
     }
 
-    currentUser = user;
+    let isFollowing = followers.includes(myId);
 
-    console.log("Logged in UID:", user.uid);
+    followBtn.innerText = isFollowing ? "Unfollow" : "Follow";
 
-    loadProfile();
-});
+    followBtn.onclick = async () => {
 
-/* 📥 LOAD PROFILE */
-async function loadProfile(){
+        followBtn.innerText = "Loading...";
+        followBtn.disabled = true;
 
-    const snap = await getDoc(doc(db,"users",currentUser.uid));
-    const d = snap.data() || {};
+        const myRef = doc(db,"users",myId);
+        const userRef = doc(db,"users",uid);
 
-    nameInput.value = d.name || "";
-    phoneInput.value = d.phone || "";
-    domainInput.value = d.domain || "";
-    locationInput.value = d.location || "";
-    experienceInput.value = d.experience || "";
-    bioInput.value = d.bio || "";
+        try {
 
-    if (profileImg && d.profileImage) {
-        profileImg.src = d.profileImage;
-    }
-}
+            await setDoc(myRef, {}, { merge:true });
+            await setDoc(userRef, {}, { merge:true });
 
-/* 📸 IMAGE UPLOAD */
-if (profilePicInput) {
-profilePicInput.addEventListener("change", async function(){
+            if(isFollowing){
 
-    const file = this.files[0];
-    if(!file) return;
+                await updateDoc(myRef,{
+                    following: arrayRemove(uid)
+                });
 
-    console.log("Uploading image...");
+                await updateDoc(userRef,{
+                    followers: arrayRemove(myId)
+                });
 
-    // 👀 Preview
-    if (profileImg) {
-        profileImg.src = URL.createObjectURL(file);
-    }
+                isFollowing = false;
+                followersCount.innerText--;
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", "Collab-Tune");
+            } else {
 
-    try {
-        const res = await fetch(
-            "https://api.cloudinary.com/v1_1/dcnlky6zb/upload",
-            { method: "POST", body: formData }
-        );
+                await updateDoc(myRef,{
+                    following: arrayUnion(uid)
+                });
 
-        const data = await res.json();
+                await updateDoc(userRef,{
+                    followers: arrayUnion(myId)
+                });
 
-        uploadedImageURL = data.secure_url;
+                isFollowing = true;
+                followersCount.innerText++;
+            }
 
-        console.log("Image uploaded:", uploadedImageURL);
+            followBtn.innerText = isFollowing ? "Unfollow" : "Follow";
 
-    } catch(err){
-        console.error("Cloudinary error:", err);
-    }
-});
-}
-
-/* 💾 SAVE PROFILE */
-window.saveProfile = async function(){
-
-    try {
-
-        console.log("Saving profile...");
-
-        if (statusText) statusText.innerText = "Saving...";
-
-        const snap = await getDoc(doc(db,"users",currentUser.uid));
-        const existing = snap.data() || {};
-
-        let finalImage = existing.profileImage || "";
-
-        if(uploadedImageURL){
-            finalImage = uploadedImageURL;
+        } catch(err){
+            console.error(err);
+            followBtn.innerText = "Retry ❌";
         }
 
-        await setDoc(doc(db,"users",currentUser.uid),{
-            name: nameInput.value || "",
-            phone: phoneInput.value || "",
-            domain: domainInput.value || "",
-            location: locationInput.value || "",
-            experience: experienceInput.value || "",
-            bio: bioInput.value || "",
-            profileImage: finalImage
-        }, { merge: true });
+        followBtn.disabled = false;
+    };
+}
 
-        console.log("Saved ✅");
-
-        if (statusText) statusText.innerText = "Saved successfully ✅";
-
-        uploadedImageURL = "";
-
-    } catch (error) {
-
-        console.error("SAVE ERROR:", error);
-
-        if (statusText) statusText.innerText = "Error: " + error.message;
+/* MESSAGE */
+function setupMessage(uid){
+    if(uid === currentUser.uid){
+        messageBtn.style.display = "none";
+        return;
     }
+
+    messageBtn.onclick = () => {
+        location.href = "chat.html?uid=" + uid;
+    };
+}
+
+/* POSTS (FAST) */
+async function loadPosts(uid){
+
+    const q = query(collection(db,"posts"), where("userId","==",uid));
+    const snap = await getDocs(q);
+
+    postsCount.innerText = snap.size;
+
+    const fragment = document.createDocumentFragment();
+    userPosts.innerHTML = "";
+
+    snap.forEach(docSnap=>{
+        const p = docSnap.data();
+
+        let media = "";
+        if(p.mediaURL){
+            if(p.mediaType==="image") media=`<img src="${p.mediaURL}" style="max-width:100%;border-radius:10px;">`;
+        }
+
+        const div = document.createElement("div");
+        div.className = "post";
+        div.innerHTML = `${p.content || ""} ${media}`;
+
+        fragment.appendChild(div);
+    });
+
+    userPosts.appendChild(fragment);
+}
+
+/* FOLLOWERS POPUP */
+window.openFollowers = async function(uid){
+
+    const snap = await getDoc(doc(db,"users",uid));
+    const followers = snap.data()?.followers || [];
+
+    followersList.innerHTML = "";
+
+    for(const f of followers){
+        const u = await getDoc(doc(db,"users",f));
+        followersList.innerHTML += `<p>${u.data()?.name || "User"}</p>`;
+    }
+
+    followersPopup.style.display = "block";
 };
+
+window.closeFollowers = () => {
+    followersPopup.style.display = "none";
+};
+
+/* SUGGESTED USERS */
+async function loadSuggestedUsers(){
+
+    const snap = await getDocs(collection(db,"users"));
+    suggestedUsers.innerHTML = "";
+
+    snap.forEach(docSnap=>{
+        if(docSnap.id === currentUser.uid) return;
+
+        const u = docSnap.data();
+
+        suggestedUsers.innerHTML += `
+        <div style="margin:6px;padding:8px;background:#1e293b;border-radius:8px;">
+            ${u.name || "User"}
+            <button onclick="location.href='profile.html?uid=${docSnap.id}'">View</button>
+        </div>`;
+    });
+}
+
+/* ANALYTICS */
+function loadAnalytics(d){
+    const followers = d.followers || [];
+    const posts = Number(postsCount.innerText) || 0;
+
+    profileStats.innerText = 
+        "Engagement Score: " + (followers.length * 2 + posts);
+}
 
 </script>
 

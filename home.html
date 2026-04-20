@@ -36,11 +36,13 @@ body {
     color: #38bdf8;
 }
 
+/* ✨ INPUT */
 .nav-center input {
     padding: 8px 12px;
     border-radius: 20px;
     border: none;
     width: 200px;
+    outline: none;
 }
 
 /* 📦 CONTAINER */
@@ -56,6 +58,7 @@ body {
     padding: 15px;
     border-radius: 15px;
     backdrop-filter: blur(10px);
+    animation: fadeIn 0.4s ease;
 }
 
 /* 🎯 BUTTONS */
@@ -80,6 +83,10 @@ body {
     transform: scale(1.05);
 }
 
+button:active {
+    transform: scale(0.95);
+}
+
 /* 📝 POST */
 .post-card {
     background: rgba(30, 41, 59, 0.8);
@@ -87,6 +94,17 @@ body {
     border-radius: 15px;
     margin-bottom: 15px;
     backdrop-filter: blur(10px);
+    animation: fadeInUp 0.4s ease;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 /* 👤 USER */
@@ -164,6 +182,55 @@ body {
     margin-left: 5px;
 }
 
+/* 💬 FLOATING CHAT */
+#chatFloating {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #38bdf8, #8b5cf6);
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 22px;
+    box-shadow: 0 0 20px rgba(56,189,248,0.6);
+    transition: 0.3s;
+}
+
+.post-card {
+    animation: fadeInUp 0.3s ease;
+}
+
+/* 📝 LAST MESSAGE */
+.last-msg {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+/* ✍️ TYPING */
+.typing {
+    font-size: 12px;
+    color: #38bdf8;
+    font-style: italic;
+}
+
+#chatFloating:hover {
+    transform: scale(1.1);
+}
+
+#msgCount {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: red;
+    font-size: 12px;
+    padding: 3px 6px;
+    border-radius: 50%;
+}
+
 /* 📱 MOBILE */
 @media(max-width:600px){
     .nav-center input {
@@ -203,11 +270,20 @@ body {
 
 </div>
 
+<!-- 💬 FLOATING CHAT -->
+<div id="chatFloating" onclick="navigate('chat.html')">
+    💬
+    <span id="msgCount" style="display:none">0</span>
+</div>
+
 <script type="module">
+
+const userCache = {};
+const postCache = new Map();
 
 import { auth, db } from "./js/firebase-config.js";
 import { 
-doc, getDoc, collection, query, orderBy, onSnapshot, updateDoc, deleteDoc 
+doc, getDoc, collection, query, orderBy, onSnapshot, updateDoc, deleteDoc, where 
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 import { arrayUnion, arrayRemove } 
@@ -216,142 +292,180 @@ from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged, signOut } 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-searchInput.addEventListener("keypress", e=>{
-    if(e.key==="Enter"){
-        location.href="search.html?role="+e.target.value;
-    }
-});
-
+/* 🔐 AUTH */
 onAuthStateChanged(auth, async user=>{
     if(user){
         loadProfile(user.uid);
         loadPosts();
-    }else location.href="index.html";
+        loadUnreadMessages();
+    } else location.href="index.html";
 });
 
+/* 👤 PROFILE (unchanged) */
 async function loadProfile(uid){
-    const snap=await getDoc(doc(db,"users",uid));
-    const d=snap.data();
-    welcome.innerText="Welcome "+d.name;
-    userRole.innerText="Instrument: "+(d.instrument||"");
-    userBio.innerText="Bio: "+(d.bio||"");
+    const snap = await getDoc(doc(db,"users",uid));
+    const d = snap.data();
+    welcome.innerText = "Welcome " + d.name;
+    userRole.innerText = "Instrument: " + (d.instrument || "");
+    userBio.innerText = "Bio: " + (d.bio || "");
 }
 
+/* 🚀 OPTIMIZED POSTS */
 function loadPosts(){
 
-const q=query(collection(db,"posts"),orderBy("timestamp","desc"));
+    const q = query(collection(db,"posts"), orderBy("timestamp","desc"));
 
-onSnapshot(q, async snap=>{
+    onSnapshot(q, async snap=>{
 
-feed.innerHTML="";
+        const fragment = document.createDocumentFragment();
 
-for(const docSnap of snap.docs){
+        for(const docSnap of snap.docs){
 
-const post=docSnap.data();
-const postId=docSnap.id;
+            const post = docSnap.data();
+            const postId = docSnap.id;
 
-const userSnap=await getDoc(doc(db,"users",post.userId));
-const user=userSnap.data()||{};
+            // 🧠 Skip re-render if unchanged
+            if(postCache.has(postId) && 
+               JSON.stringify(postCache.get(postId)) === JSON.stringify(post)){
+                continue;
+            }
 
-const likes=post.likes||[];
-const liked=likes.includes(auth.currentUser.uid);
+            postCache.set(postId, post);
 
-let media="";
-if(post.mediaURL){
-if(post.mediaType==="image") media=`<img src="${post.mediaURL}" class="post-media">`;
-else if(post.mediaType==="video") media=`<video controls class="post-media"><source src="${post.mediaURL}"></video>`;
-else if(post.mediaType==="audio") media=`<audio controls class="post-media"><source src="${post.mediaURL}"></audio>`;
+            // ⚡ USER CACHE
+            let user = userCache[post.userId];
+            if(!user){
+                const userSnap = await getDoc(doc(db,"users",post.userId));
+                user = userSnap.data() || {};
+                userCache[post.userId] = user;
+            }
+
+            const likes = post.likes || [];
+            const liked = likes.includes(auth.currentUser.uid);
+
+            let media = "";
+            if(post.mediaURL){
+                if(post.mediaType==="image")
+                    media=`<img src="${post.mediaURL}" class="post-media">`;
+                else if(post.mediaType==="video")
+                    media=`<video controls class="post-media"><source src="${post.mediaURL}"></video>`;
+                else if(post.mediaType==="audio")
+                    media=`<audio controls class="post-media"><source src="${post.mediaURL}"></audio>`;
+            }
+
+            let comments = "";
+            (post.comments||[]).forEach(c=>{
+                const isOwner = c.uid===auth.currentUser.uid;
+                comments += `
+                <div class="comment">
+                    ${c.text}
+                    ${isOwner?`<span class="delete-btn" onclick='deleteComment("${postId}", ${JSON.stringify(c)})'>❌</span>`:""}
+                </div>`;
+            });
+
+            const div = document.createElement("div");
+            div.className = "post-card";
+
+            div.innerHTML = `
+            <div class="user-row">
+                <img src="${user.profileImage||'https://via.placeholder.com/40'}"
+                onclick="viewProfile('${post.userId}')">
+                <h4 onclick="viewProfile('${post.userId}')">${user.name||"User"}</h4>
+            </div>
+
+            <p>${post.content||""}</p>
+
+            ${media}
+
+            <div class="post-actions">
+                <button onclick="toggleLike('${postId}')">${liked?"❤️":"🤍"} ${likes.length}</button>
+                <button onclick="sharePost('${postId}')">🔗</button>
+                ${post.userId===auth.currentUser.uid?
+                `<button onclick="deletePost('${postId}')">🗑</button>`:""}
+            </div>
+
+            <div class="comment-box">
+                <input id="cmt-${postId}" placeholder="Write comment...">
+                <button onclick="addComment('${postId}')">➤</button>
+            </div>
+
+            ${comments}
+            `;
+
+            fragment.appendChild(div);
+        }
+
+        if(fragment.childNodes.length){
+            feed.prepend(fragment); // ⚡ no full wipe
+        }
+    });
 }
 
-let comments="";
-(post.comments||[]).forEach(c=>{
-const isOwner=c.uid===auth.currentUser.uid;
-comments+=`
-<div class="comment">
-${c.text}
-${isOwner?`<span class="delete-btn" onclick='deleteComment("${postId}", ${JSON.stringify(c)})'>❌</span>`:""}
-</div>`;
-});
+/* ❤️ LIKE (unchanged) */
+window.toggleLike = async id=>{
+    const ref = doc(db,"posts",id);
+    const snap = await getDoc(ref);
+    const likes = snap.data().likes || [];
 
-feed.innerHTML+=`
-<div class="post-card">
+    if(likes.includes(auth.currentUser.uid))
+        await updateDoc(ref,{likes:arrayRemove(auth.currentUser.uid)});
+    else
+        await updateDoc(ref,{likes:arrayUnion(auth.currentUser.uid)});
+};
 
-<div class="user-row">
-<img src="${user.profileImage||'https://via.placeholder.com/40'}"
-onclick="viewProfile('${post.userId}')">
-<h4 onclick="viewProfile('${post.userId}')">${user.name||"User"}</h4>
-</div>
+/* 🗑 DELETE */
+window.deletePost = async id=>{
+    if(confirm("Delete post?"))
+        await deleteDoc(doc(db,"posts",id));
+};
 
-<p>${post.content||""}</p>
+/* 💬 COMMENTS */
+window.addComment = async id=>{
+    const input = document.getElementById(`cmt-${id}`);
+    if(!input.value.trim()) return;
 
-${media}
+    await updateDoc(doc(db,"posts",id),{
+        comments:arrayUnion({
+            uid:auth.currentUser.uid,
+            text:input.value,
+            time:Date.now()
+        })
+    });
 
-<div class="post-actions">
-<button onclick="toggleLike('${postId}')">${liked?"❤️":"🤍"} ${likes.length}</button>
-<button onclick="sharePost('${postId}')">🔗</button>
-${post.userId===auth.currentUser.uid?
-`<button onclick="deletePost('${postId}')">🗑</button>`:""}
-</div>
+    input.value="";
+};
 
-<div class="comment-box">
-<input id="cmt-${postId}" placeholder="Write comment...">
-<button onclick="addComment('${postId}')">➤</button>
-</div>
+window.deleteComment = async(id,c)=>{
+    await updateDoc(doc(db,"posts",id),{
+        comments:arrayRemove(c)
+    });
+};
 
-${comments}
+/* 🚀 OPTIMIZED MESSAGES */
+function loadUnreadMessages(){
 
-</div>`;
+    const q = query(
+        collection(db,"messages"),
+        where("receiverId","==",auth.currentUser.uid),
+        where("seen","==",false)
+    );
+
+    onSnapshot(q, snap=>{
+        const count = snap.size;
+
+        msgCount.innerText = count;
+        msgCount.style.display = count > 0 ? "block" : "none";
+    });
 }
-});
-}
 
-window.toggleLike=async id=>{
-const ref=doc(db,"posts",id);
-const snap=await getDoc(ref);
-const likes=snap.data().likes||[];
-
-if(likes.includes(auth.currentUser.uid))
-await updateDoc(ref,{likes:arrayRemove(auth.currentUser.uid)});
-else
-await updateDoc(ref,{likes:arrayUnion(auth.currentUser.uid)});
+/* NAV */
+window.navigate = p=>location.href=p;
+window.viewProfile = id=>location.href="profile.html?uid="+id;
+window.logout = async()=>{
+    await signOut(auth);
+    location.href="index.html";
 };
-
-window.deletePost=async id=>{
-if(confirm("Delete post?"))
-await deleteDoc(doc(db,"posts",id));
-};
-
-window.sharePost=id=>{
-navigator.clipboard.writeText(location.href+"?post="+id);
-alert("Link copied 🔗");
-};
-
-window.addComment=async id=>{
-const input=document.getElementById(`cmt-${id}`);
-if(!input.value.trim()) return;
-
-await updateDoc(doc(db,"posts",id),{
-comments:arrayUnion({
-uid:auth.currentUser.uid,
-text:input.value,
-time:Date.now()
-})
-});
-
-input.value="";
-};
-
-window.deleteComment=async(id,c)=>{
-await updateDoc(doc(db,"posts",id),{
-comments:arrayRemove(c)
-});
-};
-
-window.navigate=p=>location.href=p;
-window.viewProfile=id=>location.href="profile.html?uid="+id;
-window.logout=async()=>{await signOut(auth);location.href="index.html";};
 
 </script>
-
 </body>
 </html>

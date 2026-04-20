@@ -22,30 +22,27 @@ body {
     flex-direction: column;
 }
 
-/* 🔝 HEADER */
+/* HEADER */
 .header {
     padding: 15px;
-    font-size: 18px;
-    font-weight: bold;
     background: #111827;
+    font-weight: bold;
 }
 
-/* 📋 CHAT LIST */
+/* 💎 CHAT CARD */
 .chat-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: #1e293b;
+    width: 90%;
+    max-width: 500px;
+    margin: 10px auto;
     padding: 12px;
-    border-radius: 10px;
-    margin: 8px 10px;
-    cursor: pointer;
-    transition: 0.2s;
-}
 
-.chat-item:hover {
-    background: #334155;
-    transform: scale(1.02);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+
+    background: #1e293b;
+    border-radius: 12px;
+    cursor: pointer;
 }
 
 .chat-item img {
@@ -54,38 +51,46 @@ body {
     border-radius: 50%;
 }
 
-/* 💬 CHAT VIEW */
+.chat-info {
+    flex: 1;
+}
+
+.last-msg {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+.unread {
+    background: red;
+    padding: 4px 8px;
+    border-radius: 20px;
+    font-size: 12px;
+}
+
+/* CHAT VIEW */
 .chat-box {
     flex: 1;
     overflow-y: auto;
     padding: 10px;
-    background: #0f172a;
 }
 
-/* 🗨 MESSAGE */
 .message {
-    margin: 8px 0;
-    padding: 10px 12px;
-    border-radius: 15px;
+    margin: 6px 0;
+    padding: 10px;
+    border-radius: 12px;
     max-width: 70%;
-    font-size: 14px;
-    line-height: 1.4;
 }
 
-/* 💙 MY MESSAGE */
 .my {
-    background: linear-gradient(135deg, #2563eb, #38bdf8);
+    background: #38bdf8;
     margin-left: auto;
-    border-bottom-right-radius: 2px;
 }
 
-/* ⚪ OTHER MESSAGE */
 .other {
     background: #1e293b;
-    border-bottom-left-radius: 2px;
 }
 
-/* ⌨ INPUT */
+/* INPUT */
 .input-box {
     display: flex;
     padding: 10px;
@@ -97,30 +102,17 @@ body {
     padding: 10px;
     border-radius: 20px;
     border: none;
-    outline: none;
 }
 
 .input-box button {
     margin-left: 8px;
-    padding: 10px 15px;
-    border-radius: 20px;
-    border: none;
-    background: #38bdf8;
-    cursor: pointer;
-}
-
-/* 🔙 BACK */
-.back {
-    cursor: pointer;
     padding: 10px;
-    color: #38bdf8;
-}
-
-/* 📱 RESPONSIVE */
-@media(max-width:600px){
-    .container {
-        height: 100vh;
-    }
+    border-radius: 20px;
+        background: linear-gradient(135deg, #38bdf8, #8b5cf6);
+        color: white;
+        border: none;
+        cursor: pointer;
+    border: none;
 }
 </style>
 </head>
@@ -129,110 +121,127 @@ body {
 
 <div class="container">
 
-    <!-- 📋 CHAT LIST -->
-    <div id="listView">
-        <div class="header">Messages</div>
-        <div id="chatList"></div>
+<!-- CHAT LIST -->
+<div id="listView">
+    <div class="header">Messages</div>
+    <div id="chatList"></div>
+</div>
+
+<!-- CHAT -->
+<div id="chatView" style="display:none; flex:1; flex-direction:column;">
+    <div class="header">
+        <span onclick="goBack()">⬅</span>
+        <span id="chatWith"></span>
     </div>
 
-    <!-- 💬 CHAT VIEW -->
-    <div id="chatView" style="display:none; flex:1; flex-direction:column;">
+    <div id="chatBox" class="chat-box"></div>
 
-        <div class="header">
-            <span class="back" onclick="goBack()">⬅</span>
-            <span id="chatWith"></span>
-        </div>
-
-        <div id="chatBox" class="chat-box"></div>
-
-        <div class="input-box">
-            <input type="text" id="msgInput" placeholder="Type message...">
-            <button onclick="sendMessage()">Send</button>
-        </div>
-
+    <div class="input-box">
+        <input id="msgInput" placeholder="Type message...">
+        <button onclick="sendMessage()">Send</button>
     </div>
+</div>
 
 </div>
 
 <script type="module">
 
 import { auth, db } from "./js/firebase-config.js";
-import { collection, onSnapshot, doc, getDoc, addDoc, query, orderBy } 
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+collection, onSnapshot, doc, getDoc, addDoc,
+query, orderBy, updateDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
 import { onAuthStateChanged } 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-const params = new URLSearchParams(window.location.search);
-const receiverId = params.get("uid");
-
 let currentUserId = "";
+let receiverId = "";
 
-/* 🔐 AUTH */
+/* AUTH */
 onAuthStateChanged(auth, (user) => {
-    if (user) {
-        currentUserId = user.uid;
+    if (!user) location.href = "index.html";
 
-        if (receiverId) showChat();
-        else showList();
-
-    } else {
-        window.location.href = "index.html";
-    }
+    currentUserId = user.uid;
+    loadChatList();
 });
 
-/* 📋 CHAT LIST */
-function showList() {
-
-    listView.style.display = "block";
-    chatView.style.display = "none";
+/* LOAD CHAT LIST */
+function loadChatList(){
 
     onSnapshot(collection(db, "messages"), async (snapshot) => {
 
-        chatList.innerHTML = "";
-        let usersSet = new Set();
+        let chatMap = {};
+        let unreadMap = {};
 
         snapshot.forEach((docSnap) => {
             const msg = docSnap.data();
 
+            let otherUser = null;
+
             if (msg.senderId === currentUserId)
-                usersSet.add(msg.receiverId);
+                otherUser = msg.receiverId;
             else if (msg.receiverId === currentUserId)
-                usersSet.add(msg.senderId);
+                otherUser = msg.senderId;
+
+            if (!otherUser) return;
+
+            if (!chatMap[otherUser] || msg.timestamp > chatMap[otherUser].timestamp) {
+                chatMap[otherUser] = msg;
+            }
+
+            if (msg.receiverId === currentUserId && !msg.seen) {
+                unreadMap[otherUser] = (unreadMap[otherUser] || 0) + 1;
+            }
         });
 
-        for (const uid of usersSet) {
+        const sortedUsers = Object.keys(chatMap).sort((a, b) =>
+            chatMap[b].timestamp - chatMap[a].timestamp
+        );
+
+        chatList.innerHTML = "";
+
+        for (const uid of sortedUsers) {
 
             const userSnap = await getDoc(doc(db, "users", uid));
             const user = userSnap.data() || {};
 
             chatList.innerHTML += `
                 <div class="chat-item" onclick="openChat('${uid}')">
+
                     <img src="${user.profileImage || 'https://via.placeholder.com/40'}">
-                    <div>${user.name || "User"}</div>
+
+                    <div class="chat-info">
+                        <div>${user.name || "User"}</div>
+                        <div class="last-msg">${chatMap[uid].text || ""}</div>
+                    </div>
+
+                    ${unreadMap[uid] 
+                        ? `<div class="unread">${unreadMap[uid]}</div>` 
+                        : ""
+                    }
+
                 </div>
             `;
         }
     });
 }
 
-/* 💬 CHAT VIEW */
-function showChat() {
+/* OPEN CHAT */
+window.openChat = async function(uid){
+    receiverId = uid;
 
     listView.style.display = "none";
     chatView.style.display = "flex";
 
-    loadReceiver();
+    const snap = await getDoc(doc(db, "users", uid));
+    chatWith.innerText = snap.data()?.name || "User";
+
     loadMessages();
-}
+};
 
-/* 👤 RECEIVER */
-async function loadReceiver() {
-    const snap = await getDoc(doc(db, "users", receiverId));
-    chatWith.innerText = snap.exists() ? snap.data().name : "User";
-}
-
-/* 📥 MESSAGES */
-function loadMessages() {
+/* LOAD MESSAGES */
+function loadMessages(){
 
     const q = query(collection(db, "messages"), orderBy("timestamp"));
 
@@ -249,13 +258,17 @@ function loadMessages() {
                 (msg.senderId === receiverId && msg.receiverId === currentUserId);
 
             if (isChat) {
+
+                if (msg.receiverId === currentUserId && !msg.seen) {
+                    updateDoc(doc(db, "messages", docSnap.id), { seen: true });
+                }
+
                 const isMe = msg.senderId === currentUserId;
 
                 chatBox.innerHTML += `
-                    <div class="message ${isMe ? "my" : "other"}">
-                        ${msg.text}
-                    </div>
-                `;
+                <div class="message ${isMe ? "my" : "other"}">
+                    ${msg.text}
+                </div>`;
             }
         });
 
@@ -263,9 +276,8 @@ function loadMessages() {
     });
 }
 
-/* 📤 SEND */
+/* SEND MESSAGE */
 window.sendMessage = async function () {
-
     const text = msgInput.value.trim();
     if (!text) return;
 
@@ -273,17 +285,19 @@ window.sendMessage = async function () {
         senderId: currentUserId,
         receiverId: receiverId,
         text: text,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        seen: false
     });
 
     msgInput.value = "";
 };
 
-/* 🔀 NAV */
-window.openChat = uid => location.href = "chat.html?uid=" + uid;
-window.goBack = () => location.href = "chat.html";
+/* BACK */
+window.goBack = function(){
+    chatView.style.display = "none";
+    listView.style.display = "block";
+};
 
 </script>
-
 </body>
 </html>
