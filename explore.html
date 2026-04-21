@@ -2,223 +2,320 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Explore Musicians</title>
+<title>CollabTune – Explore</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 
 <style>
-body {
-    margin: 0;
-    font-family: Arial;
-    background: linear-gradient(135deg, #0f172a, #020617);
-    color: white;
+/* ── RESET & BASE (COLLABTUNE THEME) ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --accent:   #38bdf8;
+  --accent2:  #8b5cf6;
+  --bg:       #060d1f;
+  --surface:  rgba(15,23,42,0.75);
+  --surface2: rgba(30,41,59,0.65);
+  --border:   rgba(148,163,184,0.15);
+  --text:     #e2e8f0;
+  --muted:    #64748b;
+  --font-d:   'Syne', sans-serif;
+  --font-b:   'DM Sans', sans-serif;
 }
+body { font-family: var(--font-b); background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
 
-/* 📦 CONTAINER */
-.container {
-    max-width: 900px;
-    margin: auto;
-    padding: 20px;
+/* ── CANVAS & ORBS ── */
+#bgCanvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.orb { position: fixed; border-radius: 50%; filter: blur(90px); opacity: 0.15; pointer-events: none; z-index: 0; animation: orbFloat 14s ease-in-out infinite alternate; }
+.orb-1 { width:500px;height:500px;background:#7c3aed;top:-150px;left:-100px;animation-duration:16s; }
+.orb-2 { width:400px;height:400px;background:#0ea5e9;bottom:-100px;right:-80px;animation-duration:12s;animation-delay:-6s; }
+@keyframes orbFloat { from { transform:translate(0,0) scale(1); } to { transform:translate(30px,22px) scale(1.1); } }
+
+/* ── NAVBAR ── */
+.navbar {
+  position: sticky; top: 0; z-index: 200; background: rgba(6,13,31,0.88); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border); padding: 0 24px; height: 62px; display: flex; align-items: center;
 }
+.nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; cursor: pointer;}
+.nav-brand-icon { width:36px;height:36px; border-radius:10px; background:linear-gradient(135deg,var(--accent2),var(--accent)); display:flex;align-items:center;justify-content:center; font-size:18px; }
+.nav-brand-name { font-family:var(--font-d); font-weight:800;font-size:17px; color:#f1f5f9; }
 
-/* 🔝 HEADER */
-.header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 20px;
+/* ── MAIN LAYOUT ── */
+.container { position: relative; z-index: 10; max-width: 1000px; margin: 30px auto; padding: 0 16px 80px; }
+.header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.back-btn { cursor: pointer; color: var(--accent); display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: rgba(56,189,248,0.1); transition: 0.2s; border: none; }
+.back-btn:hover { background: rgba(56,189,248,0.2); transform: translateX(-3px); }
+.page-title { font-family: var(--font-d); font-size: 24px; font-weight: 700; color: white; }
+
+/* ── SEARCH BOX ── */
+.search-wrapper { position: relative; margin-bottom: 30px; }
+.search-icon { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; stroke: var(--muted); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.search-wrapper input {
+  width: 100%; padding: 16px 20px 16px 48px; border-radius: 50px; border: 1px solid rgba(56,189,248,0.2);
+  background: rgba(15,23,42,0.7); backdrop-filter: blur(10px); color: white; font-family: var(--font-b); font-size: 16px; outline: none; transition: 0.3s;
 }
+.search-wrapper input:focus { border-color: var(--accent); box-shadow: 0 0 20px rgba(56,189,248,0.15); }
+.search-wrapper input::placeholder { color: var(--muted); }
 
-.back-btn {
-    cursor: pointer;
-    color: #38bdf8;
-}
-
-/* 🔍 SEARCH */
-.search-box {
-    margin-bottom: 20px;
-}
-
-.search-box input {
-    width: 100%;
-    padding: 10px;
-    border-radius: 20px;
-    border: none;
-}
-
-/* 🧱 GRID */
-.grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 15px;
-}
-
-/* 👤 CARD */
+/* ── GRID & CARDS ── */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
 .card {
-    background: rgba(30, 41, 59, 0.8);
-    padding: 15px;
-    border-radius: 15px;
-    text-align: center;
-    backdrop-filter: blur(10px);
-    transition: 0.2s;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 20px;
+  text-align: center; backdrop-filter: blur(16px); transition: 0.3s;
+  opacity: 0; transform: translateY(20px); animation: fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) forwards;
 }
+.card:hover { transform: translateY(-5px); border-color: rgba(56,189,248,0.3); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
 
-.card:hover {
-    transform: translateY(-5px);
-}
+@keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
 
-/* 👤 IMAGE */
-.card img {
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    object-fit: cover;
-}
+.card-img-wrap { position: relative; margin-bottom: 12px; }
+.card img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(56,189,248,0.3); }
+.card h3 { font-family: var(--font-d); font-size: 18px; font-weight: 700; color: white; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-role { font-size: 13px; color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
 
-/* 🎯 BUTTONS */
-.btn-row {
-    display: flex;
-    gap: 5px;
-    margin-top: 10px;
-}
+/* Followers Display */
+.card-followers { font-size: 12px; color: var(--muted); margin-bottom: 12px; font-weight: 500; }
+.card-followers span { color: white; font-weight: 700; }
 
+.card-bio { font-size: 13.5px; color: #cbd5e1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 40px; margin-bottom: 16px; }
+
+/* ── BUTTONS ── */
+.btn-row { display: flex; gap: 8px; justify-content: center; }
 .btn {
-    flex: 1;
-    padding: 8px;
-    border-radius: 20px;
-    border: none;
-    cursor: pointer;
+  flex: 1; padding: 10px 0; border-radius: 12px; font-family: var(--font-b); font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; border: none; display: flex; align-items: center; justify-content: center; gap: 6px;
 }
+.btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; }
+.btn-primary:hover { box-shadow: 0 4px 15px rgba(139,92,246,0.4); transform: translateY(-2px); }
+.btn-outline { background: rgba(15,23,42,0.5); border: 1px solid var(--border); color: white; }
+.btn-outline:hover { background: rgba(56,189,248,0.1); border-color: rgba(56,189,248,0.3); }
 
-.message {
-    background: #38bdf8;
-}
+/* Status messages */
+.status-msg { text-align: center; color: var(--muted); font-size: 15px; margin-top: 40px; grid-column: 1 / -1; }
+.loader { display: inline-block; width: 30px; height: 30px; border: 3px solid rgba(56,189,248,0.2); border-radius: 50%; border-top-color: var(--accent); animation: spin 1s ease-in-out infinite; margin-bottom: 10px;}
+@keyframes spin { to { transform: rotate(360deg); } }
 
-.follow {
-    background: #8b5cf6;
-}
-
-/* 📱 MOBILE */
-@media(max-width:600px){
-    .container {
-        padding: 15px;
-    }
-}
 </style>
 </head>
 
 <body>
 
+<canvas id="bgCanvas"></canvas>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<nav class="navbar">
+  <a class="nav-brand" href="home.html">
+    <div class="nav-brand-icon">🎸</div>
+    <span class="nav-brand-name">CollabTune</span>
+  </a>
+</nav>
+
 <div class="container">
 
-<div class="header">
-    <span class="back-btn" onclick="goBack()">⬅</span>
-    <h2>Explore Musicians</h2>
-</div>
+  <div class="header">
+    <button class="back-btn" onclick="location.href='home.html'">
+      <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+    </button>
+    <div class="page-title">Explore Musicians</div>
+  </div>
 
-<div class="search-box">
-    <input type="text" id="searchInput" placeholder="Search musicians...">
-</div>
+  <div class="search-wrapper">
+    <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+    <input type="text" id="searchInput" placeholder="Search by name, role, or instrument...">
+  </div>
 
-<div id="exploreList" class="grid"></div>
+  <div id="exploreList" class="grid">
+    <div class="status-msg">
+      <div class="loader"></div>
+      <div>Discovering talent...</div>
+    </div>
+  </div>
 
 </div>
 
 <script type="module">
-
 import { auth, db } from "./js/firebase-config.js";
-import { collection, getDocs, doc, updateDoc, getDoc } 
+import { collection, getDocs, doc, getDoc, setDoc, arrayUnion, arrayRemove } 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-import { arrayUnion, arrayRemove } 
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
 import { onAuthStateChanged } 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-let currentUserId = "";
+let myUserObj = null;
+let allUsersCache = []; 
 
-// 🔙 Back
-window.goBack = () => location.href = "home.html";
+const searchInput = document.getElementById("searchInput");
+const container = document.getElementById("exploreList");
 
-// 🔐 Auth
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        currentUserId = user.uid;
-        loadUsers();
-    } else {
-        location.href = "index.html";
-    }
+onAuthStateChanged(auth, async (user) => {
+    if (!user) return location.href = "index.html";
+    
+    const snap = await getDoc(doc(db, "users", user.uid));
+    myUserObj = snap.data() || {};
+    myUserObj.uid = user.uid;
+    if (!myUserObj.following) myUserObj.following = [];
+
+    const params = new URLSearchParams(window.location.search);
+    const urlQuery = params.get("search") || params.get("role");
+    if(urlQuery) searchInput.value = urlQuery;
+
+    await fetchAllUsers();
 });
 
-// 🔍 SEARCH FILTER
-searchInput.addEventListener("input", loadUsers);
+async function fetchAllUsers() {
+    try {
+        const snapshot = await getDocs(collection(db, "users"));
+        allUsersCache = [];
 
-// 📥 LOAD USERS
-async function loadUsers() {
+        snapshot.forEach((docSnap) => {
+            if (docSnap.id === myUserObj.uid) return; 
+            allUsersCache.push({ id: docSnap.id, ...docSnap.data() });
+        });
 
-    const snapshot = await getDocs(collection(db, "users"));
-    const container = document.getElementById("exploreList");
-    const search = searchInput.value.toLowerCase();
+        renderUsers(); 
+    } catch (e) {
+        console.error("Error fetching users:", e);
+        container.innerHTML = "<div class='status-msg'>Failed to load users.</div>";
+    }
+}
 
+function renderUsers() {
+    const query = searchInput.value.toLowerCase().trim();
     container.innerHTML = "";
-
-    snapshot.forEach((docSnap) => {
-
-        const user = docSnap.data();
-        const uid = docSnap.id;
-
-        if (uid === currentUserId) return;
-
+    
+    const filteredUsers = allUsersCache.filter(user => {
         const name = (user.name || "").toLowerCase();
         const role = (user.role || user.domain || "").toLowerCase();
+        const inst = (user.instrument || "").toLowerCase();
+        return name.includes(query) || role.includes(query) || inst.includes(query);
+    });
 
-        if (!name.includes(search) && !role.includes(search)) return;
+    if (filteredUsers.length === 0) {
+        container.innerHTML = "<div class='status-msg'>No musicians found matching your search.</div>";
+        return;
+    }
+
+    filteredUsers.forEach((user, index) => {
+        const isFollowing = myUserObj.following.includes(user.id);
+        const followerCount = (user.followers || []).length;
+        
+        const followClass = isFollowing ? "btn-outline" : "btn-primary";
+        const followText = isFollowing ? "Unfollow" : "Follow";
+        const followIcon = isFollowing 
+            ? `<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>`
+            : `<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+
+        const animDelay = `${index * 0.05}s`;
 
         container.innerHTML += `
-            <div class="card">
-                <img src="${user.profileImage || 'https://via.placeholder.com/70'}">
-                <h3>${user.name}</h3>
-                <p>${user.role || user.domain || "Musician"}</p>
-                <p>${user.bio || ""}</p>
+            <div class="card" style="animation-delay: ${animDelay}">
+                <div class="card-img-wrap">
+                    <img src="${user.profileImage || 'https://via.placeholder.com/80'}" onclick="viewProfile('${user.id}')" style="cursor:pointer;">
+                </div>
+                <h3 onclick="viewProfile('${user.id}')" style="cursor:pointer;">${user.name || "Musician"}</h3>
+                <div class="card-role">${user.role || user.domain || "Artist"} ${user.instrument ? '• '+user.instrument : ''}</div>
+                
+                <div class="card-followers"><span id="count-${user.id}">${followerCount}</span> Followers</div>
+
+                <div class="card-bio">${user.bio || "No bio provided."}</div>
 
                 <div class="btn-row">
-                    <button class="btn message" onclick="startChat('${uid}')">💬</button>
-                    <button class="btn follow" onclick="toggleFollow('${uid}')">➕</button>
+                    <button class="btn btn-outline" onclick="viewProfile('${user.id}')" title="Profile">
+                        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </button>
+                    <button class="btn btn-outline" onclick="startChat('${user.id}')" title="Message">
+                        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </button>
+                    <button id="follow-${user.id}" class="btn ${followClass}" onclick="toggleFollow('${user.id}')">
+                        ${followIcon} <span id="text-${user.id}">${followText}</span>
+                    </button>
                 </div>
             </div>
         `;
     });
-
-    if (container.innerHTML === "") {
-        container.innerHTML = "<p>No users found 😢</p>";
-    }
 }
 
-// 💬 CHAT
+searchInput.addEventListener("input", renderUsers);
+
+window.startChat = uid => location.href = "chat.html?uid=" + uid;
+/* 🧭 NAVIGATION (WITH INSTANT PRE-LOAD CACHING) */
 window.startChat = uid => location.href = "chat.html?uid=" + uid;
 
-// 👥 FOLLOW
-window.toggleFollow = async function(uid) {
-
-    const ref = doc(db, "users", uid);
-    const snap = await getDoc(ref);
-
-    const followers = snap.data().followers || [];
-
-    if (followers.includes(currentUserId)) {
-        await updateDoc(ref, {
-            followers: arrayRemove(currentUserId)
-        });
-        alert("Unfollowed");
-    } else {
-        await updateDoc(ref, {
-            followers: arrayUnion(currentUserId)
-        });
-        alert("Followed");
+window.viewProfile = function(uid) {
+    // Find the user we clicked on in our local cache
+    const userToPreload = allUsersCache.find(u => u.id === uid);
+    if (userToPreload) {
+        // Save them to browser memory so the profile page loads instantly
+        sessionStorage.setItem("preloadedProfile", JSON.stringify(userToPreload));
     }
+    location.href = "profile.html?uid=" + uid;
 };
 
-</script>
+window.toggleFollow = async function(targetUid) {
+    const btn = document.getElementById(`follow-${targetUid}`);
+    const countSpan = document.getElementById(`count-${targetUid}`);
+    
+    // Prevent double-clicking while we process
+    btn.disabled = true;
 
+    const myRef = doc(db, "users", myUserObj.uid);
+    const targetRef = doc(db, "users", targetUid);
+    
+    if (!Array.isArray(myUserObj.following)) myUserObj.following = [];
+    const isCurrentlyFollowing = myUserObj.following.includes(targetUid);
+    let currentCount = parseInt(countSpan.innerText) || 0;
+
+    // 🚀 STEP 1: OPTIMISTIC UI UPDATE (HAPPENS INSTANTLY)
+    if (isCurrentlyFollowing) {
+        // Optimistically Unfollow
+        btn.className = "btn btn-primary";
+        btn.innerHTML = `<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> <span id="text-${targetUid}">Follow</span>`;
+        countSpan.innerText = Math.max(0, currentCount - 1);
+        
+        myUserObj.following = myUserObj.following.filter(id => id !== targetUid);
+        const targetUser = allUsersCache.find(u => u.id === targetUid);
+        if (targetUser && Array.isArray(targetUser.followers)) {
+            targetUser.followers = targetUser.followers.filter(id => id !== myUserObj.uid);
+        }
+    } else {
+        // Optimistically Follow
+        btn.className = "btn btn-outline";
+        btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> <span id="text-${targetUid}">Unfollow</span>`;
+        countSpan.innerText = currentCount + 1; 
+        
+        myUserObj.following.push(targetUid);
+        const targetUser = allUsersCache.find(u => u.id === targetUid);
+        if (targetUser) {
+            if (!Array.isArray(targetUser.followers)) targetUser.followers = [];
+            targetUser.followers.push(myUserObj.uid);
+        }
+    }
+
+    // Re-enable button immediately so the UI feels snappy
+    btn.disabled = false;
+
+    // 🚀 STEP 2: BACKGROUND DATABASE SYNC (USING PROMISE.ALL FOR SPEED)
+    try {
+        if (isCurrentlyFollowing) {
+            await Promise.all([
+                setDoc(myRef, { following: arrayRemove(targetUid) }, { merge: true }),
+                setDoc(targetRef, { followers: arrayRemove(myUserObj.uid) }, { merge: true })
+            ]);
+        } else {
+            await Promise.all([
+                setDoc(myRef, { following: arrayUnion(targetUid) }, { merge: true }),
+                setDoc(targetRef, { followers: arrayUnion(myUserObj.uid) }, { merge: true })
+            ]);
+        }
+    } catch (e) {
+        console.error("Background sync failed:", e);
+        alert("Connection error. Reverting action.");
+        
+        // 🚀 STEP 3: ROLLBACK IF FAILED
+        // (Just calls the render function to reset the UI to match the actual DB state)
+        fetchAllUsers(); 
+    }
+};
+</script>
 </body>
 </html>

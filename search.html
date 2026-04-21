@@ -141,10 +141,8 @@ h2 {
 </div>
 
 <script type="module">
-
 import { db } from "./js/firebase-config.js";
-import { collection, getDocs } 
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* 🔥 NORMALIZE */
 function normalize(text) {
@@ -163,25 +161,21 @@ function smartKeyword(text) {
 
 /* 🔍 SEARCH */
 async function searchUsers() {
-
     const raw = document.getElementById("searchInput").value;
 
     if (!raw.trim()) {
-        alert("Enter something");
+        alert("Enter something to search");
         return;
     }
 
     const input = smartKeyword(normalize(raw));
-
     const snapshot = await getDocs(collection(db, "users"));
     const results = document.getElementById("results");
 
     results.innerHTML = "";
-
     let found = false;
 
     snapshot.forEach((docSnap) => {
-
         const user = docSnap.data();
         const uid = docSnap.id;
 
@@ -199,13 +193,10 @@ async function searchUsers() {
             results.innerHTML += `
                 <div class="card">
                     <img src="${user.profileImage || 'https://via.placeholder.com/60'}">
-
                     <h3>${user.name || "User"}</h3>
-
                     <p><strong>Role:</strong> ${user.role || "Not added"}</p>
-                    <p><strong>Instrument:</strong> ${user.instrument || ""}</p>
+                    <p><strong>Instrument:</strong> ${user.instrument || "None"}</p>
                     <p>${user.bio || ""}</p>
-
                     <div class="btn-row">
                         <button class="btn message-btn" onclick="startChat('${uid}')">💬</button>
                         <button class="btn profile-btn" onclick="viewProfile('${uid}')">👤</button>
@@ -220,21 +211,26 @@ async function searchUsers() {
     }
 }
 
-/* 🔘 BUTTON */
+/* 🔘 DOM ELEMENTS */
+const searchBtn = document.getElementById("searchBtn");
+const searchInput = document.getElementById("searchInput");
+
+/* 🔘 BUTTON CLICK */
 searchBtn.addEventListener("click", searchUsers);
 
-/* ⌨️ ENTER */
+/* ⌨️ ENTER KEY */
 searchInput.addEventListener("keypress", e => {
     if (e.key === "Enter") searchUsers();
 });
 
-/* 🔗 AUTO SEARCH */
+/* 🔗 AUTO SEARCH (THE FIX) */
 const params = new URLSearchParams(window.location.search);
-const roleFromURL = params.get("role");
+// Now it checks for "search" (from home.html) OR "role"
+const queryFromURL = params.get("search") || params.get("role");
 
-if (roleFromURL) {
-    searchInput.value = roleFromURL;
-    searchUsers();
+if (queryFromURL) {
+    searchInput.value = queryFromURL;
+    searchUsers(); // Automatically run the search!
 }
 
 /* 💬 CHAT */

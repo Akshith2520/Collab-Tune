@@ -2,343 +2,546 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Profile</title>
+<title>CollabTune – Profile</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 
 <style>
-body {
-    margin: 0;
-    font-family: 'Segoe UI', sans-serif;
-    background: radial-gradient(circle at top, #1e293b, #020617);
-    color: #e2e8f0;
+/* ── RESET & BASE (COLLABTUNE THEME) ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --accent:   #38bdf8;
+  --accent2:  #8b5cf6;
+  --bg:       #060d1f;
+  --surface:  rgba(15,23,42,0.75);
+  --surface2: rgba(30,41,59,0.65);
+  --border:   rgba(148,163,184,0.15);
+  --text:     #e2e8f0;
+  --muted:    #64748b;
+  --font-d:   'Syne', sans-serif;
+  --font-b:   'DM Sans', sans-serif;
 }
+body { font-family: var(--font-b); background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
 
-.container {
-    max-width: 600px;
-    margin: auto;
-    padding: 20px;
-}
+/* ── CANVAS & ORBS ── */
+#bgCanvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.orb { position: fixed; border-radius: 50%; filter: blur(90px); opacity: 0.15; pointer-events: none; z-index: 0; animation: orbFloat 14s ease-in-out infinite alternate; }
+.orb-1 { width:500px;height:500px;background:#7c3aed;top:-150px;left:-100px;animation-duration:16s; }
+.orb-2 { width:400px;height:400px;background:#0ea5e9;bottom:-100px;right:-80px;animation-duration:12s;animation-delay:-6s; }
+@keyframes orbFloat { from { transform:translate(0,0) scale(1); } to { transform:translate(30px,22px) scale(1.1); } }
 
-/* PROFILE CARD */
-.profile-card {
-    background: rgba(30,41,59,0.6);
-    padding: 20px;
-    border-radius: 20px;
-    text-align: center;
+/* ── NAVBAR ── */
+.navbar {
+  position: sticky; top: 0; z-index: 200; background: rgba(6,13,31,0.88); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border); padding: 0 24px; height: 62px; display: flex; align-items: center;
 }
+.nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; cursor: pointer;}
+.nav-brand-icon { width:36px;height:36px; border-radius:10px; background:linear-gradient(135deg,var(--accent2),var(--accent)); display:flex;align-items:center;justify-content:center; font-size:18px; }
+.nav-brand-name { font-family:var(--font-d); font-weight:800;font-size:17px; color:#f1f5f9; }
 
-/* 🖼️ IMAGE FIX */
-.profile-card img {
-    width: 110px;
-    height: 110px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin: auto;
-    display: block;
-    border: 3px solid #38bdf8;
-}
+/* ── CONTAINER ── */
+.container { position: relative; z-index: 10; max-width: 680px; margin: 20px auto; padding: 0 16px 80px; }
+.glass-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; backdrop-filter: blur(16px); padding: 24px; margin-bottom: 20px; }
 
-/* BUTTON */
-button {
-    padding: 8px 12px;
-    margin: 5px;
-    border: none;
-    border-radius: 10px;
-    background: #38bdf8;
-    color: white;
-    cursor: pointer;
-}
+/* ── PROFILE HEADER ── */
+.profile-header { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.profile-avatar-wrap { position: relative; margin-bottom: 16px; }
+.profile-avatar { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid rgba(56,189,248,0.5); box-shadow: 0 0 30px rgba(56,189,248,0.2); }
+.profile-name { font-family: var(--font-d); font-size: 24px; font-weight: 700; margin-bottom: 4px; color: white; }
+.profile-role { font-size: 14px; color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+.profile-bio { font-size: 14.5px; color: #cbd5e1; max-width: 80%; line-height: 1.6; margin-bottom: 20px; }
 
-.section {
-    margin-top: 15px;
-    background: rgba(17,24,39,0.7);
-    padding: 10px;
-    border-radius: 10px;
-}
+/* ── STATS ── */
+.profile-stats { display: flex; gap: 30px; margin-bottom: 24px; }
+.stat-box { display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: 0.2s; }
+.stat-box:hover { transform: translateY(-2px); color: var(--accent); }
+.stat-num { font-family: var(--font-d); font-size: 20px; font-weight: 700; color: white; }
+.stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
 
-.post {
-    background: #1e293b;
-    padding: 10px;
-    border-radius: 10px;
-    margin-top: 10px;
-}
+/* ── BUTTONS ── */
+.btn-group { display: flex; gap: 12px; width: 100%; justify-content: center; }
+.btn { padding: 12px 24px; border-radius: 50px; font-family: var(--font-b); font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; border: none; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; }
+.btn-primary:hover { box-shadow: 0 4px 20px rgba(139,92,246,0.4); transform: scale(1.05); }
+.btn-outline { background: rgba(15,23,42,0.5); border: 1px solid var(--border); color: white; }
+.btn-outline:hover { background: rgba(56,189,248,0.1); border-color: rgba(56,189,248,0.3); }
 
-/* POPUP */
-#followersPopup {
-    display: none;
-    position: fixed;
-    top: 20%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #1e293b;
-    padding: 20px;
-    border-radius: 12px;
-    width: 300px;
-}
+/* ── SECTIONS ── */
+.section-title { font-family: var(--font-d); font-size: 16px; font-weight: 700; margin-bottom: 16px; color: white; display: flex; align-items: center; gap: 8px; }
+.post-grid { display: flex; flex-direction: column; gap: 16px; }
+.post-card { background: rgba(15,23,42,0.5); border: 1px solid var(--border); border-radius: 16px; padding: 16px; }
+.post-card img, .post-card video { width: 100%; border-radius: 12px; margin-top: 10px; }
+
+.suggested-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+.suggest-card { background: rgba(15,23,42,0.5); border: 1px solid var(--border); border-radius: 14px; padding: 16px; text-align: center; transition: 0.2s; cursor: pointer; }
+.suggest-card:hover { border-color: rgba(56,189,248,0.3); transform: translateY(-3px); }
+.suggest-card img { width: 50px; height: 50px; border-radius: 50%; margin-bottom: 8px; object-fit: cover;}
+.suggest-name { font-weight: 600; font-size: 13px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.suggest-role { font-size: 11px; color: var(--muted); }
+
+/* ── MODALS ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 300; }
+.modal-content { background: var(--bg); border: 1px solid var(--border); border-radius: 20px; width: 90%; max-width: 400px; padding: 24px; position: relative; }
+.modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; }
+.modal-title { font-family: var(--font-d); font-size: 18px; font-weight: 700; margin-bottom: 20px; text-align: center; }
+
+/* Edit Profile Picture Upload UI */
+.edit-pic-wrap { display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; }
+.edit-pic-wrap img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); margin-bottom: 10px; }
+#profilePicInput { display: none; }
+
+.input-group { margin-bottom: 16px; text-align: left; }
+.input-group label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; }
+.input-group input, .input-group textarea { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: rgba(15,23,42,0.8); color: white; font-family: var(--font-b); outline: none; }
+.input-group input:focus { border-color: var(--accent); }
+.modal-list { max-height: 300px; overflow-y: auto; }
+.modal-list-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); cursor: pointer; transition: 0.2s; }
+.modal-list-item:hover { background: rgba(56,189,248,0.1); padding-left: 8px; border-radius: 8px;}
+.modal-list-item img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover;}
+
 </style>
 </head>
-
 <body>
 
+<canvas id="bgCanvas"></canvas>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<nav class="navbar">
+  <a class="nav-brand" href="home.html">
+    <div class="nav-brand-icon">🎸</div>
+    <span class="nav-brand-name">CollabTune</span>
+  </a>
+</nav>
+
 <div class="container">
+  
+  <div class="glass-panel profile-header">
+    <div class="profile-avatar-wrap">
+      <img id="viewImg" class="profile-avatar" src="https://via.placeholder.com/120">
+    </div>
+    <div class="profile-name" id="viewName">Loading...</div>
+    <div class="profile-role" id="viewRole"></div>
+    <div class="profile-bio" id="viewBio"></div>
 
-<div class="profile-card">
-<img id="viewImg">
-<h2 id="viewName"></h2>
-<p id="viewDomain"></p>
-<p id="viewLocation"></p>
-<p id="viewBio"></p>
+    <div class="profile-stats">
+      <div class="stat-box" onclick="openListModal('followers')">
+        <span class="stat-num" id="followersCount">0</span>
+        <span class="stat-label">Followers</span>
+      </div>
+      <div class="stat-box" onclick="openListModal('following')">
+        <span class="stat-num" id="followingCount">0</span>
+        <span class="stat-label">Following</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-num" id="postsCount">0</span>
+        <span class="stat-label">Posts</span>
+      </div>
+    </div>
 
-<div>
-<span id="followersCount" style="cursor:pointer">0</span> Followers •
-<span id="followingCount">0</span> Following •
-<span id="postsCount">0</span> Posts
+    <div class="btn-group" id="btnGroup"></div>
+  </div>
+
+  <div class="glass-panel">
+    <div class="section-title">🎵 Recent Posts</div>
+    <div class="post-grid" id="userPosts"></div>
+  </div>
+
+  <div class="glass-panel">
+    <div class="section-title" id="suggestionTitle">✨ Suggested Matches</div>
+    <div class="suggested-grid" id="suggestedUsers"></div>
+  </div>
+
 </div>
 
-<button id="followBtn"></button>
-<button id="messageBtn">Message</button>
+<div class="modal-overlay" id="editModal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal('editModal')">✕</button>
+    <div class="modal-title">Edit Profile</div>
+    
+    <div class="edit-pic-wrap">
+      <img id="editProfilePreview" src="https://via.placeholder.com/80">
+      <button class="btn btn-outline" style="padding: 6px 14px; font-size: 12px;" onclick="document.getElementById('profilePicInput').click()">Change Picture</button>
+      <input type="file" id="profilePicInput" accept="image/*">
+    </div>
+
+    <div class="input-group">
+      <label>Display Name</label>
+      <input type="text" id="editName">
+    </div>
+    <div class="input-group">
+      <label>Role / Domain</label>
+      <input type="text" id="editRole" placeholder="e.g. Singer, Guitarist, Producer">
+    </div>
+    <div class="input-group">
+      <label>Instrument</label>
+      <input type="text" id="editInstrument" placeholder="e.g. Acoustic Guitar">
+    </div>
+    <div class="input-group">
+      <label>Bio</label>
+      <textarea id="editBio" rows="3"></textarea>
+    </div>
+    <button class="btn btn-primary" id="saveProfileBtn" style="width: 100%;" onclick="saveProfile()">Save Changes</button>
+  </div>
 </div>
 
-<!-- POSTS -->
-<div class="section">
-<h3>Posts</h3>
-<div id="userPosts"></div>
+<div class="modal-overlay" id="listModal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal('listModal')">✕</button>
+    <div class="modal-title" id="listModalTitle">List</div>
+    <div class="modal-list" id="userList"></div>
+  </div>
 </div>
 
-<!-- SUGGESTED -->
-<div class="section">
-<h3>Suggested Users</h3>
-<div id="suggestedUsers"></div>
-</div>
-
-<!-- ANALYTICS -->
-<div class="section">
-<h3>Analytics</h3>
-<p id="profileStats"></p>
-</div>
-
-</div>
-
-<!-- FOLLOWERS POPUP -->
-<div id="followersPopup">
-<h3>Followers</h3>
-<div id="followersList"></div>
-<button onclick="closeFollowers()">Close</button>
-</div>
+<script>
+(function(){
+  const canvas = document.getElementById('bgCanvas'); const ctx = canvas.getContext('2d');
+  let W, H; function resize(){ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+  window.addEventListener('resize', resize); resize();
+  const notes = ['♩','♪','♫','♬']; const particles = [];
+  function spawn(){ particles.push({ x: Math.random()*W, y: H+20, note: notes[Math.floor(Math.random()*notes.length)], size: 12+Math.random()*16, speed: 0.35+Math.random()*0.6, drift: (Math.random()-0.5)*0.35, alpha: 0.05+Math.random()*0.1, angle: Math.random()*Math.PI*2, color: ['#a78bfa','#7dd3fc'][Math.floor(Math.random()*2)] }); }
+  for(let i=0; i<15; i++){ spawn(); particles[particles.length-1].y = Math.random()*H; }
+  function loop(){
+    ctx.clearRect(0, 0, W, H); if(Math.random()<0.02) spawn();
+    for(let i = particles.length-1; i >= 0; i--){
+      const p = particles[i]; p.y -= p.speed; p.x += p.drift + Math.sin(p.angle)*0.25; p.angle += 0.01;
+      if(p.y < -30){ particles.splice(i,1); continue; }
+      ctx.save(); ctx.globalAlpha = p.alpha; ctx.font = `${p.size}px serif`; ctx.fillStyle = p.color; ctx.fillText(p.note, p.x, p.y); ctx.restore();
+    } requestAnimationFrame(loop);
+  } loop();
+})();
+</script>
 
 <script type="module">
-
 import { auth, db } from "./js/firebase-config.js";
-import {
-doc, getDoc, setDoc, collection, query, where, getDocs,
-updateDoc, arrayUnion, arrayRemove
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
+import { doc, getDoc, setDoc, collection, query, where, getDocs, arrayUnion, arrayRemove } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-let currentUser;
+const CLOUD_NAME = "dcnlky6zb"; 
+const UPLOAD_PRESET = "Collab-Tune"; 
+const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
+
+let myUserObj = null; 
+let currentProfileUID = null; 
+let isMyProfile = false;
+let pendingProfilePic = null; 
 
 const params = new URLSearchParams(window.location.search);
-const profileUID = params.get("uid");
+currentProfileUID = params.get("uid");
 
-/* AUTH */
-onAuthStateChanged(auth, async user=>{
-    if(!user) location.href="index.html";
-    currentUser = user;
+onAuthStateChanged(auth, async user => {
+    if(!user) return location.href = "index.html";
+    
+    const mySnap = await getDoc(doc(db, "users", user.uid));
+    myUserObj = mySnap.data() || {};
+    myUserObj.uid = user.uid;
 
-    const uid = profileUID || user.uid;
-    loadProfile(uid);
+    if (!currentProfileUID) currentProfileUID = user.uid;
+    isMyProfile = (currentProfileUID === user.uid);
+
+    loadProfile(currentProfileUID);
 });
 
-/* LOAD PROFILE */
 async function loadProfile(uid){
-    const snap = await getDoc(doc(db,"users",uid));
+    // 🚀 Check if we have preloaded data from the Explore page
+    const cachedStr = sessionStorage.getItem("preloadedProfile");
+    if (cachedStr) {
+        const cachedUser = JSON.parse(cachedStr);
+        if (cachedUser.id === uid) {
+            // Paint the UI instantly so the user sees no loading screen!
+            document.getElementById("viewImg").src = cachedUser.profileImage || "https://via.placeholder.com/120";
+            document.getElementById("viewName").innerText = cachedUser.name || "Unknown Musician";
+            document.getElementById("viewRole").innerText = cachedUser.role ? `${cachedUser.role} • ${cachedUser.instrument || ''}` : "Musician";
+            document.getElementById("viewBio").innerText = cachedUser.bio || "No bio yet.";
+        }
+        sessionStorage.removeItem("preloadedProfile"); // Clean up memory
+    }
+
+    // Now quietly fetch the absolute freshest data from Firebase in the background
+    const snap = await getDoc(doc(db, "users", uid));
     const d = snap.data() || {};
 
-    showProfile(d, uid);
-}
-
-/* SHOW PROFILE */
-function showProfile(d, uid){
-
-    viewImg.src = d.profileImage || "";
-    viewName.innerText = d.name || "";
-    viewDomain.innerText = d.domain || "";
-    viewLocation.innerText = d.location || "";
-    viewBio.innerText = d.bio || "";
-
-    setupFollow(d, uid);
-    setupMessage(uid);
-
-    loadPosts(uid);
-    loadSuggestedUsers();
-    loadAnalytics(d);
-
-    followersCount.onclick = () => openFollowers(uid);
-}
-
-/* FOLLOW SYSTEM */
-function setupFollow(d, uid){
-
-    const myId = currentUser.uid;
+    // Overwrite with fresh data (fixes any changes that happened in the last few seconds)
+    document.getElementById("viewImg").src = d.profileImage || "https://via.placeholder.com/120";
+    document.getElementById("viewName").innerText = d.name || "Unknown Musician";
+    document.getElementById("viewRole").innerText = d.role ? `${d.role} • ${d.instrument || ''}` : "Musician";
+    document.getElementById("viewBio").innerText = d.bio || "No bio yet.";
 
     const followers = Array.isArray(d.followers) ? d.followers : [];
     const following = Array.isArray(d.following) ? d.following : [];
+    document.getElementById("followersCount").innerText = followers.length;
+    document.getElementById("followingCount").innerText = following.length;
 
-    followersCount.innerText = followers.length;
-    followingCount.innerText = following.length;
+    setupButtons(uid, followers);
+    loadPosts(uid);
+    
+    if (isMyProfile) loadGlobalSuggestions();
+    else loadTargetedSuggestions(followers);
+}
 
-    if(uid === myId){
-        followBtn.style.display = "none";
-        return;
+function setupButtons(uid, followers) {
+    const btnGroup = document.getElementById("btnGroup");
+    btnGroup.innerHTML = "";
+
+    if (isMyProfile) {
+        btnGroup.innerHTML = `<button class="btn btn-outline" onclick="openEditModal()">⚙️ Edit Profile</button>`;
+    } else {
+        let isFollowing = followers.includes(myUserObj.uid);
+        
+        const followBtn = document.createElement("button");
+        followBtn.className = isFollowing ? "btn btn-outline" : "btn btn-primary";
+        followBtn.innerText = isFollowing ? "Unfollow" : "Follow";
+        followBtn.onclick = () => toggleFollow(uid, followBtn, isFollowing);
+
+        const msgBtn = document.createElement("button");
+        msgBtn.className = "btn btn-outline";
+        msgBtn.innerText = "💬 Message";
+        msgBtn.onclick = () => location.href = "chat.html?uid=" + uid;
+
+        btnGroup.appendChild(followBtn);
+        btnGroup.appendChild(msgBtn);
+    }
+}
+
+window.toggleFollow = async function(targetUid, btn, currentlyFollowing) {
+    // Prevent double clicks while processing the initial click
+    btn.disabled = true;
+
+    const myRef = doc(db, "users", myUserObj.uid);
+    const targetRef = doc(db, "users", targetUid);
+    const countEl = document.getElementById("followersCount");
+    let currentCount = parseInt(countEl.innerText) || 0;
+
+    // 🚀 STEP 1: OPTIMISTIC UI UPDATE (HAPPENS INSTANTLY)
+    if (currentlyFollowing) {
+        btn.innerText = "Follow";
+        btn.className = "btn btn-primary";
+        countEl.innerText = Math.max(0, currentCount - 1);
+    } else {
+        btn.innerText = "Unfollow";
+        btn.className = "btn btn-outline";
+        countEl.innerText = currentCount + 1;
     }
 
-    let isFollowing = followers.includes(myId);
+    // Instantly re-bind the button logic so it's ready for the next click
+    btn.onclick = () => toggleFollow(targetUid, btn, !currentlyFollowing);
+    
+    // Re-enable button immediately so the UI feels snappy
+    btn.disabled = false;
 
-    followBtn.innerText = isFollowing ? "Unfollow" : "Follow";
-
-    followBtn.onclick = async () => {
-
-        followBtn.innerText = "Loading...";
-        followBtn.disabled = true;
-
-        const myRef = doc(db,"users",myId);
-        const userRef = doc(db,"users",uid);
-
-        try {
-
-            await setDoc(myRef, {}, { merge:true });
-            await setDoc(userRef, {}, { merge:true });
-
-            if(isFollowing){
-
-                await updateDoc(myRef,{
-                    following: arrayRemove(uid)
-                });
-
-                await updateDoc(userRef,{
-                    followers: arrayRemove(myId)
-                });
-
-                isFollowing = false;
-                followersCount.innerText--;
-
-            } else {
-
-                await updateDoc(myRef,{
-                    following: arrayUnion(uid)
-                });
-
-                await updateDoc(userRef,{
-                    followers: arrayUnion(myId)
-                });
-
-                isFollowing = true;
-                followersCount.innerText++;
-            }
-
-            followBtn.innerText = isFollowing ? "Unfollow" : "Follow";
-
-        } catch(err){
-            console.error(err);
-            followBtn.innerText = "Retry ❌";
+    // 🚀 STEP 2: BACKGROUND DATABASE SYNC (PARALLEL UPLOAD)
+    try {
+        if (currentlyFollowing) {
+            await Promise.all([
+                setDoc(myRef, { following: arrayRemove(targetUid) }, { merge: true }),
+                setDoc(targetRef, { followers: arrayRemove(myUserObj.uid) }, { merge: true })
+            ]);
+        } else {
+            await Promise.all([
+                setDoc(myRef, { following: arrayUnion(targetUid) }, { merge: true }),
+                setDoc(targetRef, { followers: arrayUnion(myUserObj.uid) }, { merge: true })
+            ]);
         }
-
-        followBtn.disabled = false;
-    };
-}
-
-/* MESSAGE */
-function setupMessage(uid){
-    if(uid === currentUser.uid){
-        messageBtn.style.display = "none";
-        return;
+    } catch (e) {
+        console.error("Follow error:", e);
+        alert("Connection error. Reverting action.");
+        
+        // 🚀 STEP 3: ROLLBACK IF FAILED
+        // If the internet drops, reload the profile to show the true database state
+        loadProfile(targetUid);
     }
+};
 
-    messageBtn.onclick = () => {
-        location.href = "chat.html?uid=" + uid;
-    };
-}
-
-/* POSTS (FAST) */
 async function loadPosts(uid){
-
-    const q = query(collection(db,"posts"), where("userId","==",uid));
+    const q = query(collection(db, "posts"), where("userId", "==", uid));
     const snap = await getDocs(q);
+    document.getElementById("postsCount").innerText = snap.size;
 
-    postsCount.innerText = snap.size;
+    const feed = document.getElementById("userPosts");
+    feed.innerHTML = "";
 
-    const fragment = document.createDocumentFragment();
-    userPosts.innerHTML = "";
-
-    snap.forEach(docSnap=>{
+    snap.forEach(docSnap => {
         const p = docSnap.data();
-
         let media = "";
-        if(p.mediaURL){
-            if(p.mediaType==="image") media=`<img src="${p.mediaURL}" style="max-width:100%;border-radius:10px;">`;
-        }
+        if(p.mediaURL && p.mediaType === "image") media = `<img src="${p.mediaURL}">`;
+        else if(p.mediaURL && p.mediaType === "video") media = `<video controls src="${p.mediaURL}"></video>`;
 
-        const div = document.createElement("div");
-        div.className = "post";
-        div.innerHTML = `${p.content || ""} ${media}`;
-
-        fragment.appendChild(div);
-    });
-
-    userPosts.appendChild(fragment);
-}
-
-/* FOLLOWERS POPUP */
-window.openFollowers = async function(uid){
-
-    const snap = await getDoc(doc(db,"users",uid));
-    const followers = snap.data()?.followers || [];
-
-    followersList.innerHTML = "";
-
-    for(const f of followers){
-        const u = await getDoc(doc(db,"users",f));
-        followersList.innerHTML += `<p>${u.data()?.name || "User"}</p>`;
-    }
-
-    followersPopup.style.display = "block";
-};
-
-window.closeFollowers = () => {
-    followersPopup.style.display = "none";
-};
-
-/* SUGGESTED USERS */
-async function loadSuggestedUsers(){
-
-    const snap = await getDocs(collection(db,"users"));
-    suggestedUsers.innerHTML = "";
-
-    snap.forEach(docSnap=>{
-        if(docSnap.id === currentUser.uid) return;
-
-        const u = docSnap.data();
-
-        suggestedUsers.innerHTML += `
-        <div style="margin:6px;padding:8px;background:#1e293b;border-radius:8px;">
-            ${u.name || "User"}
-            <button onclick="location.href='profile.html?uid=${docSnap.id}'">View</button>
+        feed.innerHTML += `
+        <div class="post-card">
+            <div style="font-size:14px">${p.content || ""}</div>
+            ${media}
         </div>`;
     });
+    if(snap.size === 0) feed.innerHTML = "<p style='color:var(--muted);font-size:13px;text-align:center;'>No posts yet.</p>";
 }
 
-/* ANALYTICS */
-function loadAnalytics(d){
-    const followers = d.followers || [];
-    const posts = Number(postsCount.innerText) || 0;
+async function loadTargetedSuggestions(profileFollowers) {
+    document.getElementById("suggestionTitle").innerText = "✨ Mutuals & Matches";
+    const container = document.getElementById("suggestedUsers");
+    container.innerHTML = "";
 
-    profileStats.innerText = 
-        "Engagement Score: " + (followers.length * 2 + posts);
+    if(profileFollowers.length === 0) {
+        container.innerHTML = "<p style='font-size:13px;color:var(--muted);text-align:center;width:100%'>No matches found.</p>";
+        return;
+    }
+
+    for (const followerUid of profileFollowers) {
+        if (followerUid === myUserObj.uid) continue;
+        const uSnap = await getDoc(doc(db, "users", followerUid));
+        const u = uSnap.data();
+        if(!u) continue;
+        
+        let isMatch = false;
+        if (myUserObj.instrument && u.instrument && u.instrument.toLowerCase() === myUserObj.instrument.toLowerCase()) isMatch = true;
+        if (myUserObj.role && u.role && u.role.toLowerCase() === myUserObj.role.toLowerCase()) isMatch = true;
+
+        if (isMatch || profileFollowers.length <= 3) renderSuggestion(followerUid, u, container);
+    }
 }
 
+async function loadGlobalSuggestions() {
+    const snap = await getDocs(collection(db, "users"));
+    const container = document.getElementById("suggestedUsers");
+    container.innerHTML = "";
+
+    let hasMatches = false;
+    snap.forEach(docSnap => {
+        if(docSnap.id === myUserObj.uid) return;
+        const u = docSnap.data();
+        let isMatch = false;
+        if (myUserObj.instrument && u.instrument && u.instrument.toLowerCase() === myUserObj.instrument.toLowerCase()) isMatch = true;
+        if (myUserObj.role && u.role && u.role.toLowerCase() === myUserObj.role.toLowerCase()) isMatch = true;
+
+        if(isMatch) {
+            hasMatches = true;
+            renderSuggestion(docSnap.id, u, container);
+        }
+    });
+
+    if(!hasMatches) container.innerHTML = "<p style='font-size:13px;color:var(--muted);text-align:center;width:100%'>Add a Role or Instrument to see matches!</p>";
+}
+
+function renderSuggestion(uid, user, container) {
+    container.innerHTML += `
+    <div class="suggest-card" onclick="location.href='profile.html?uid=${uid}'">
+        <img src="${user.profileImage || 'https://via.placeholder.com/50'}">
+        <div class="suggest-name">${user.name || "Musician"}</div>
+        <div class="suggest-role">${user.role || ""}</div>
+    </div>`;
+}
+
+/* ── 🎯 DYNAMIC LIST MODAL LOGIC ── */
+/* ── 🎯 DYNAMIC LIST MODAL LOGIC (PARALLEL FETCH FIX) ── */
+window.openListModal = async function(type) {
+    const snap = await getDoc(doc(db, "users", currentProfileUID));
+    const listArray = snap.data()?.[type] || []; 
+    
+    const listContainer = document.getElementById("userList");
+    document.getElementById("listModalTitle").innerText = type.charAt(0).toUpperCase() + type.slice(1);
+    
+    // Show the modal instantly with a loading message
+    listContainer.innerHTML = "<p style='color:var(--muted);font-size:14px;text-align:center;padding:20px 0;'>Loading...</p>";
+    document.getElementById("listModal").style.display = "flex";
+
+    if(listArray.length === 0) {
+        listContainer.innerHTML = `<p style='color:var(--muted);font-size:14px;text-align:center;padding:20px 0;'>No ${type} yet.</p>`;
+        return;
+    } 
+
+    try {
+        // 🚀 Fetch ALL users at the exact same time instead of waiting in a loop
+        const userPromises = listArray.map(id => getDoc(doc(db, "users", id)));
+        const userSnaps = await Promise.all(userPromises);
+
+        listContainer.innerHTML = ""; // Clear loader
+        
+        userSnaps.forEach(uSnap => {
+            const u = uSnap.data();
+            if (u) {
+                listContainer.innerHTML += `
+                <div class="modal-list-item" onclick="location.href='profile.html?uid=${uSnap.id}'">
+                    <img src="${u.profileImage || 'https://via.placeholder.com/36'}">
+                    <span style="font-size:15px;font-weight:600;color:white">${u.name || "User"}</span>
+                </div>`;
+            }
+        });
+    } catch (error) {
+        console.error("Error loading list:", error);
+        listContainer.innerHTML = `<p style='color:#f87171;font-size:14px;text-align:center;'>Failed to load list.</p>`;
+    }
+}
+
+document.getElementById("profilePicInput").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    pendingProfilePic = file;
+    document.getElementById("editProfilePreview").src = URL.createObjectURL(file);
+});
+
+window.openEditModal = function() {
+    document.getElementById("editName").value = myUserObj.name || "";
+    document.getElementById("editRole").value = myUserObj.role || "";
+    document.getElementById("editInstrument").value = myUserObj.instrument || "";
+    document.getElementById("editBio").value = myUserObj.bio || "";
+    
+    document.getElementById("editProfilePreview").src = myUserObj.profileImage || "https://via.placeholder.com/80";
+    pendingProfilePic = null; 
+    
+    document.getElementById("editModal").style.display = "flex";
+}
+
+window.saveProfile = async function() {
+    const saveBtn = document.getElementById("saveProfileBtn");
+    saveBtn.disabled = true;
+    saveBtn.innerText = "Saving Profile...";
+
+    let updatedImageUrl = myUserObj.profileImage;
+
+    try {
+        if (pendingProfilePic) {
+            saveBtn.innerText = "Uploading Picture...";
+            const formData = new FormData();
+            formData.append("file", pendingProfilePic);
+            formData.append("upload_preset", UPLOAD_PRESET);
+
+            const response = await fetch(CLOUDINARY_URL, { method: "POST", body: formData });
+            const data = await response.json();
+            
+            if (data.secure_url) updatedImageUrl = data.secure_url;
+            else throw new Error("Cloudinary Error");
+        }
+
+        const newName = document.getElementById("editName").value.trim();
+        const newRole = document.getElementById("editRole").value.trim();
+        const newInst = document.getElementById("editInstrument").value.trim();
+        const newBio = document.getElementById("editBio").value.trim();
+
+        await setDoc(doc(db, "users", myUserObj.uid), {
+            name: newName, role: newRole, instrument: newInst, bio: newBio, profileImage: updatedImageUrl
+        }, { merge: true });
+
+        myUserObj.name = newName;
+        myUserObj.role = newRole;
+        myUserObj.instrument = newInst;
+        myUserObj.bio = newBio;
+        myUserObj.profileImage = updatedImageUrl;
+
+        closeModal("editModal");
+        loadProfile(myUserObj.uid); 
+        
+    } catch (e) {
+        console.error("Save failed:", e);
+        alert("Failed to save profile.");
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerText = "Save Changes";
+    }
+}
+
+window.closeModal = function(id) { document.getElementById(id).style.display = "none"; }
 </script>
-
 </body>
 </html>
