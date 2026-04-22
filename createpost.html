@@ -2,156 +2,180 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Create Post</title>
+<title>CollabTune – Create Post</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 
 <style>
-body {
-  margin: 0;
-  font-family: Arial;
-  background: linear-gradient(135deg, #0f172a, #020617);
-  color: white;
+/* ── RESET & BASE (COLLABTUNE THEME) ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --accent:   #38bdf8;
+  --accent2:  #8b5cf6;
+  --bg:       #060d1f;
+  --surface:  rgba(15,23,42,0.75);
+  --border:   rgba(148,163,184,0.15);
+  --text:     #e2e8f0;
+  --muted:    #64748b;
+  --font-d:   'Syne', sans-serif;
+  --font-b:   'DM Sans', sans-serif;
 }
+body { font-family: var(--font-b); background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
 
-/* 📦 CONTAINER */
-.container {
-  max-width: 600px;
-  margin: auto;
-  padding: 20px;
+/* ── CANVAS & ORBS ── */
+#bgCanvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.orb { position: fixed; border-radius: 50%; filter: blur(90px); opacity: 0.15; pointer-events: none; z-index: 0; animation: orbFloat 14s ease-in-out infinite alternate; }
+.orb-1 { width:500px;height:500px;background:#7c3aed;top:-150px;left:-100px;animation-duration:16s; }
+.orb-2 { width:400px;height:400px;background:#0ea5e9;bottom:-100px;right:-80px;animation-duration:12s;animation-delay:-6s; }
+@keyframes orbFloat { from { transform:translate(0,0) scale(1); } to { transform:translate(30px,22px) scale(1.1); } }
+
+/* ── NAVBAR ── */
+.navbar {
+  position: sticky; top: 0; z-index: 200; background: rgba(6,13,31,0.88); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border); padding: 0 24px; height: 62px; display: flex; align-items: center; justify-content: space-between;
 }
-
-/* 🔙 BACK */
-.back {
-  cursor: pointer;
-  color: #38bdf8;
-  margin-bottom: 15px;
-  display: inline-block;
+.nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; cursor: pointer;}
+.nav-brand-icon { width:36px;height:36px; border-radius:10px; background:linear-gradient(135deg,var(--accent2),var(--accent)); display:flex;align-items:center;justify-content:center; font-size:18px; }
+.nav-brand-name { font-family:var(--font-d); font-weight:800;font-size:17px; color:#f1f5f9; }
+.nav-actions { display:flex;align-items:center;gap:4px; }
+.nav-btn {
+  width:40px;height:40px;border-radius:12px;border:none;background:transparent;color:var(--muted);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;transition:0.2s;
 }
+.nav-btn svg { width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round; }
+.nav-btn:hover { background:rgba(56,189,248,0.08);color:var(--accent); }
 
-/* 🧊 CARD */
-.card {
-  background: rgba(30, 41, 59, 0.8);
-  padding: 20px;
-  border-radius: 15px;
-  backdrop-filter: blur(10px);
-}
+/* ── CONTAINER & CARD ── */
+.container { position: relative; z-index: 10; max-width: 600px; margin: 30px auto; padding: 0 16px 80px; }
+.header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.back-btn { cursor: pointer; color: var(--accent); display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: rgba(56,189,248,0.1); transition: 0.2s; border: none; }
+.back-btn:hover { background: rgba(56,189,248,0.2); transform: translateX(-3px); }
+.page-title { font-family: var(--font-d); font-size: 24px; font-weight: 700; color: white; }
 
-/* ✏️ TEXTAREA */
+.glass-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; backdrop-filter: blur(16px); padding: 24px; }
+
+/* ── POST INPUTS ── */
 textarea {
-  width: 100%;
-  height: 140px;
-  padding: 12px;
-  border-radius: 10px;
-  border: none;
-  resize: none;
-  font-size: 15px;
-  background: #0f172a;
-  color: white;
+  width: 100%; height: 140px; padding: 16px; border-radius: 16px; border: 1px solid var(--border);
+  background: rgba(6,13,31,0.6); color: white; font-family: var(--font-b); font-size: 15px; 
+  resize: none; outline: none; transition: 0.3s; margin-bottom: 16px;
 }
+textarea:focus { border-color: var(--accent); box-shadow: 0 0 15px rgba(56,189,248,0.1); }
+textarea::placeholder { color: var(--muted); }
 
-/* 📁 FILE INPUT */
+/* ── FILE UPLOAD UI ── */
 .file-box {
-  margin-top: 15px;
-  border: 2px dashed #38bdf8;
-  border-radius: 12px;
-  padding: 20px;
-  text-align: center;
-  cursor: pointer;
-  transition: 0.2s;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  border: 2px dashed rgba(56,189,248,0.4); border-radius: 16px; padding: 30px 20px; 
+  text-align: center; cursor: pointer; transition: 0.2s; background: rgba(56,189,248,0.05);
 }
+.file-box:hover { background: rgba(56,189,248,0.1); border-color: var(--accent); }
+.file-box svg { width: 32px; height: 32px; stroke: var(--accent); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.file-box-text { font-size: 14px; font-weight: 600; color: white; }
+.file-box-sub { font-size: 12px; color: var(--muted); }
+input[type="file"] { display: none; }
 
-.file-box:hover {
-  background: rgba(56, 189, 248, 0.1);
+/* ── MEDIA PREVIEW ── */
+.preview-container { position: relative; display: none; margin-top: 16px; border-radius: 16px; overflow: hidden; border: 1px solid var(--border); background: #000; }
+.preview-container img, .preview-container video { width: 100%; display: block; max-height: 400px; object-fit: contain; }
+.preview-container audio { width: 100%; display: block; margin: 20px 0; }
+.clear-media-btn {
+  position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: white; border: none;
+  width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); transition: 0.2s;
 }
+.clear-media-btn:hover { background: #ef4444; }
 
-input[type="file"] {
-  display: none;
+/* ── BUTTON ── */
+.btn-primary {
+  width: 100%; padding: 14px; margin-top: 24px; border-radius: 50px; border: none;
+  background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white;
+  font-family: var(--font-b); font-size: 16px; font-weight: 700; cursor: pointer; 
+  transition: 0.3s; display: flex; justify-content: center; align-items: center; gap: 8px;
 }
+.btn-primary:hover { box-shadow: 0 4px 20px rgba(139,92,246,0.4); transform: translateY(-2px); }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
 
-/* 👀 PREVIEW */
-.preview {
-  margin-top: 15px;
-}
-
-.preview img,
-.preview video {
-  width: 100%;
-  border-radius: 10px;
-}
-
-.preview audio {
-  width: 100%;
-}
-
-/* 🚀 BUTTON */
-button {
-  width: 100%;
-  margin-top: 15px;
-  padding: 12px;
-  border-radius: 25px;
-  border: none;
-  background: linear-gradient(135deg, #38bdf8, #8b5cf6);
-  color: white;
-  font-size: 16px;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-button:hover {
-  transform: scale(1.03);
-}
-
-button:disabled {
-  background: gray;
-}
-
-/* 📱 MOBILE */
-@media(max-width:600px){
-  .container {
-    padding: 15px;
-  }
-}
 </style>
 </head>
 
 <body>
 
+<canvas id="bgCanvas"></canvas>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<nav class="navbar">
+  <a class="nav-brand" href="home.html">
+    <div class="nav-brand-icon">🎸</div>
+    <span class="nav-brand-name">CollabTune</span>
+  </a>
+  
+  <div class="nav-actions">
+    <button class="nav-btn" title="Home" onclick="window.location.href='home.html'">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+    </button>
+  </div>
+</nav>
+
 <div class="container">
+  <div class="header">
+    <button class="back-btn" onclick="window.location.href='home.html'">
+      <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+    </button>
+    <div class="page-title">Create Post</div>
+  </div>
 
-<div class="back" onclick="goBack()">⬅ Back</div>
+  <div class="glass-panel">
+    <textarea id="postContent" placeholder="Share your vibe, ideas, or latest track..."></textarea>
 
-<div class="card">
+    <label class="file-box" id="fileUploadBox">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <div class="file-box-text">Add Image, Video, or Audio</div>
+      <div class="file-box-sub">Click to browse your files</div>
+      <input type="file" id="mediaFile" accept="image/*,video/*,audio/*">
+    </label>
 
-<h2>Create Post</h2>
+    <div id="previewContainer" class="preview-container">
+      <button class="clear-media-btn" onclick="clearMedia()" title="Remove Media">✕</button>
+      <div id="previewContent"></div>
+    </div>
 
-<textarea id="postContent" placeholder="Share your vibe 🎸..."></textarea>
-
-<!-- 📁 FILE UI -->
-<label class="file-box">
-  Upload Image / Video / Audio 🎬
-  <input type="file" id="mediaFile" accept="image/*,video/*,audio/*">
-</label>
-
-<div id="preview" class="preview"></div>
-
-<button id="postBtn" onclick="createPost()">Post</button>
-
+    <button id="postBtn" class="btn-primary" onclick="createPost()">Post to Feed</button>
+  </div>
 </div>
 
-</div>
+<script>
+(function(){
+  const canvas = document.getElementById('bgCanvas'); const ctx = canvas.getContext('2d');
+  let W, H; function resize(){ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+  window.addEventListener('resize', resize); resize();
+  const notes = ['♩','♪','♫','♬']; const particles = [];
+  function spawn(){ particles.push({ x: Math.random()*W, y: H+20, note: notes[Math.floor(Math.random()*notes.length)], size: 12+Math.random()*16, speed: 0.35+Math.random()*0.6, drift: (Math.random()-0.5)*0.35, alpha: 0.05+Math.random()*0.1, angle: Math.random()*Math.PI*2, color: ['#a78bfa','#7dd3fc'][Math.floor(Math.random()*2)] }); }
+  for(let i=0; i<15; i++){ spawn(); particles[particles.length-1].y = Math.random()*H; }
+  function loop(){
+    ctx.clearRect(0, 0, W, H); if(Math.random()<0.02) spawn();
+    for(let i = particles.length-1; i >= 0; i--){
+      const p = particles[i]; p.y -= p.speed; p.x += p.drift + Math.sin(p.angle)*0.25; p.angle += 0.01;
+      if(p.y < -30){ particles.splice(i,1); continue; }
+      ctx.save(); ctx.globalAlpha = p.alpha; ctx.font = `${p.size}px serif`; ctx.fillStyle = p.color; ctx.fillText(p.note, p.x, p.y); ctx.restore();
+    } requestAnimationFrame(loop);
+  } loop();
+})();
+</script>
 
 <script type="module">
-
 import { auth, db } from "./js/firebase-config.js";
 import { collection, addDoc } 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-let currentUserId = "";
+const CLOUD_NAME = "dcnlky6zb"; 
+const UPLOAD_PRESET = "Collab-Tune"; 
+const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`;
 
-/* 🔙 */
-window.goBack = () => window.location.href = "home.html";
+let currentUserId = "";
 
 /* 🔐 AUTH */
 onAuthStateChanged(auth, (user) => {
@@ -159,88 +183,104 @@ onAuthStateChanged(auth, (user) => {
   else window.location.href = "index.html";
 });
 
-/* 👀 PREVIEW */
+/* 👀 PREVIEW LOGIC */
 const fileInput = document.getElementById("mediaFile");
-const preview = document.getElementById("preview");
+const fileBox = document.getElementById("fileUploadBox");
+const previewContainer = document.getElementById("previewContainer");
+const previewContent = document.getElementById("previewContent");
 
 fileInput.addEventListener("change", () => {
   const file = fileInput.files[0];
-  preview.innerHTML = "";
-
   if (!file) return;
 
   const url = URL.createObjectURL(file);
+  previewContent.innerHTML = "";
 
   if (file.type.startsWith("image")) {
-    preview.innerHTML = `<img src="${url}">`;
-  } 
-  else if (file.type.startsWith("video")) {
-    preview.innerHTML = `<video controls src="${url}"></video>`;
-  } 
-  else if (file.type.startsWith("audio")) {
-    preview.innerHTML = `<audio controls src="${url}"></audio>`;
+    previewContent.innerHTML = `<img src="${url}">`;
+  } else if (file.type.startsWith("video")) {
+    previewContent.innerHTML = `<video controls src="${url}"></video>`;
+  } else if (file.type.startsWith("audio")) {
+    previewContent.innerHTML = `<audio controls src="${url}"></audio>`;
   }
+
+  // Switch UI to show preview
+  fileBox.style.display = "none";
+  previewContainer.style.display = "block";
 });
 
-/* 🚀 POST */
+/* ❌ CLEAR MEDIA */
+window.clearMedia = function() {
+  fileInput.value = ""; // Reset input
+  previewContent.innerHTML = "";
+  previewContainer.style.display = "none";
+  fileBox.style.display = "flex"; // Bring back upload box
+};
+
+/* 🚀 POST LOGIC */
 window.createPost = async function () {
-
   const btn = document.getElementById("postBtn");
-  btn.disabled = true;
-  btn.innerText = "Posting...";
-
   const text = document.getElementById("postContent").value.trim();
   const file = fileInput.files[0];
 
   if (!text && !file) {
-    alert("Write something or upload media!");
-    btn.disabled = false;
-    btn.innerText = "Post";
+    alert("Write something or upload media to post!");
     return;
   }
 
+  btn.disabled = true;
   let mediaURL = "";
   let mediaType = "";
 
   if (file) {
+    btn.innerText = "Uploading Media... ⏳";
     try {
-
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("upload_preset", "Collab-Tune");
+      formData.append("upload_preset", UPLOAD_PRESET);
 
-      const res = await fetch(
-        "https://api.cloudinary.com/v1_1/dcnlky6zb/upload",
-        { method: "POST", body: formData }
-      );
-
+      const res = await fetch(CLOUDINARY_URL, { method: "POST", body: formData });
       const data = await res.json();
-      mediaURL = data.secure_url;
-
-      if (file.type.startsWith("image")) mediaType = "image";
-      else if (file.type.startsWith("video")) mediaType = "video";
-      else if (file.type.startsWith("audio")) mediaType = "audio";
-
+      
+      if (data.secure_url) {
+        mediaURL = data.secure_url;
+        if (file.type.startsWith("image")) mediaType = "image";
+        else if (file.type.startsWith("video")) mediaType = "video";
+        else if (file.type.startsWith("audio")) mediaType = "audio";
+      } else {
+        throw new Error("Cloudinary Error");
+      }
     } catch (err) {
-      alert("Upload failed ❌");
+      console.error(err);
+      alert("Media upload failed. Please check your connection.");
       btn.disabled = false;
-      btn.innerText = "Post";
+      btn.innerText = "Post to Feed";
       return;
     }
   }
 
-  await addDoc(collection(db, "posts"), {
-    userId: currentUserId,
-    content: text,
-    mediaURL,
-    mediaType,
-    timestamp: Date.now()
-  });
+  btn.innerText = "Finishing Post... 🚀";
 
-  alert("Posted 🎉");
-  location.href = "home.html";
+  try {
+    await addDoc(collection(db, "posts"), {
+      userId: currentUserId,
+      content: text,
+      mediaURL: mediaURL,
+      mediaType: mediaType,
+      timestamp: Date.now(),
+      likes: [],     
+      comments: []
+    });
+
+    // Go back to home instantly upon success
+    window.location.href = "home.html";
+  } catch (error) {
+    console.error("Error adding document: ", error);
+    alert("Failed to create post. Try again.");
+    btn.disabled = false;
+    btn.innerText = "Post to Feed";
+  }
 };
-
 </script>
 
 </body>

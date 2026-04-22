@@ -101,7 +101,6 @@ body {
   color:#f1f5f9;letter-spacing:-0.3px;
 }
 
-/* FIX #1 — search fills middle column properly */
 .nav-search {
   position:relative;
   width:100%;
@@ -155,7 +154,6 @@ body {
 .nav-btn:hover { background:rgba(56,189,248,0.08);color:var(--accent); }
 .nav-btn.danger:hover { background:rgba(248,113,113,0.08);color:#f87171; }
 
-/* FIX #3 — navbar message badge */
 .nav-badge {
   position:absolute;top:5px;right:5px;
   min-width:16px;height:16px;
@@ -171,7 +169,6 @@ body {
   to   { transform:scale(1); }
 }
 
-/* tooltip */
 .nav-btn[data-tip] { position:relative; }
 .nav-btn[data-tip]::after {
   content:attr(data-tip);
@@ -278,7 +275,7 @@ body {
 }
 .action-btn span { position:relative;z-index:1; }
 
-/* ── SKELETONS (FIX #2) ─────────────────────── */
+/* ── SKELETONS ─────────────────────── */
 .skeleton {
   background:var(--surface);border:1px solid var(--border);
   border-radius:20px;padding:20px;margin-bottom:16px;
@@ -459,7 +456,6 @@ audio.post-media {
 <div class="orb orb-3"></div>
 <div class="orb orb-4"></div>
 
-<!-- ── NAVBAR ── -->
 <nav class="navbar">
 
   <a class="nav-brand" href="home.html">
@@ -475,12 +471,11 @@ audio.post-media {
   </div>
 
   <div class="nav-actions">
-    <!-- FIX #3 — messages with live badge in navbar -->
-    <button class="nav-btn" data-tip="Messages" onclick="navigate('chat.html')">
+    <button class="nav-btn" data-tip="Messages" onclick="window.location.href='chat.html'">
       <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       <span class="nav-badge" id="navMsgBadge"></span>
     </button>
-    <button class="nav-btn" data-tip="Profile" onclick="navigate('profile.html')">
+    <button class="nav-btn" data-tip="Profile" onclick="window.location.href='profile.html'">
       <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
     </button>
     <button class="nav-btn danger" data-tip="Logout" onclick="logout()">
@@ -490,7 +485,6 @@ audio.post-media {
 
 </nav>
 
-<!-- ── MAIN ── -->
 <main class="page">
 
   <div class="profile-card" id="profileCard">
@@ -506,11 +500,11 @@ audio.post-media {
   </div>
 
   <div class="action-buttons">
-    <button class="action-btn" onclick="navigate('createpost.html')">
+    <button class="action-btn" onclick="window.location.href='createpost.html'">
       <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       <span>Create Post</span>
     </button>
-    <button class="action-btn" onclick="navigate('explore.html')">
+    <button class="action-btn" onclick="window.location.href='explore.html'">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
       <span>Explore</span>
     </button>
@@ -518,7 +512,6 @@ audio.post-media {
 
   <div class="feed-label">Your Feed</div>
 
-  <!-- FIX #2 — skeletons show immediately while posts load -->
   <div id="skeletons">
     <div class="skeleton">
       <div class="skel-row">
@@ -556,12 +549,11 @@ audio.post-media {
 
 </main>
 
-<div id="chatFloating" onclick="navigate('chat.html')">
+<div id="chatFloating" onclick="window.location.href='chat.html'">
   <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
   <span id="msgCount"></span>
 </div>
 
-<!-- ── ANIMATED BACKGROUND ── -->
 <script type="module">
 import { auth, db } from "./js/firebase-config.js";
 import {
@@ -580,7 +572,7 @@ onAuthStateChanged(auth, async user => {
     loadProfile(user.uid);
     loadPosts();
     loadUnreadMessages();
-    setupSearch(); // Initialize Enter key listener
+    setupSearch(); 
   } else {
     location.href = "index.html";
   }
@@ -598,19 +590,18 @@ async function loadProfile(uid) {
   document.getElementById('profileCard').style.opacity = '1';
 }
 
-/* 🔍 SEARCH LOGIC (FIX #1) */
+/* 🔍 SEARCH LOGIC */
 function setupSearch() {
   const searchInput = document.getElementById('searchInput');
   searchInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
       const term = searchInput.value.trim();
-      // FIXED: Redirecting to search.html instead of explore.html
       if (term) location.href = `search.html?search=${encodeURIComponent(term)}`;
     }
   });
 }
 
-/* 📰 POSTS (FIX #2, #3, #5) */
+/* 📰 POSTS */
 function loadPosts() {
   const q = query(collection(db, "posts"), orderBy("timestamp", "desc"), limit(20));
 
@@ -620,7 +611,6 @@ function loadPosts() {
 
     const feed = document.getElementById('feed');
     
-    // 1. Identify missing users to fetch in parallel (Latency Fix)
     const neededUids = [...new Set(snap.docs.map(d => d.data().userId))];
     await Promise.all(neededUids.map(async uid => {
       if (!userCache[uid]) {
@@ -629,13 +619,11 @@ function loadPosts() {
       }
     }));
 
-    // 2. Render Posts
     for (const docSnap of snap.docs) {
       const post = docSnap.data();
       const postId = docSnap.id;
       const serial = JSON.stringify(post);
 
-      // DOM Reconciliation: Don't re-render if data is identical (Anti-Flicker Fix)
       let card = feed.querySelector(`.post-card[data-id="${postId}"]`);
       if (postCache.get(postId) === serial && card) continue;
       postCache.set(postId, serial);
@@ -645,7 +633,6 @@ function loadPosts() {
       const liked = auth.currentUser && likes.includes(auth.currentUser.uid);
       const isMe = auth.currentUser && post.userId === auth.currentUser.uid;
 
-      // Media Logic
       let media = "";
       if (post.mediaURL) {
         if (post.mediaType === "image") media = `<img src="${post.mediaURL}" class="post-media" loading="lazy">`;
@@ -653,7 +640,6 @@ function loadPosts() {
         else if (post.mediaType === "audio") media = `<audio controls class="post-media"><source src="${post.mediaURL}"></audio>`;
       }
 
-      // Comments Logic (User Name Fix)
       let commentsHTML = "";
       for (const c of (post.comments || [])) {
         if (!userCache[c.uid]) {
@@ -671,9 +657,9 @@ function loadPosts() {
 
       const html = `
         <div class="user-row">
-          <img src="${user.profileImage || 'https://via.placeholder.com/44'}" onclick="viewProfile('${post.userId}')">
+          <img src="${user.profileImage || 'https://via.placeholder.com/44'}" onclick="window.location.href='profile.html?uid=${post.userId}'">
           <div class="user-info">
-            <div class="user-name" onclick="viewProfile('${post.userId}')">${user.name || "User"}</div>
+            <div class="user-name" onclick="window.location.href='profile.html?uid=${post.userId}'">${user.name || "User"}</div>
             ${user.role ? `<span class="user-role-tag">${user.role}</span>` : ""}
           </div>
         </div>
@@ -705,7 +691,7 @@ function loadPosts() {
         card.className = "post-card";
         card.dataset.id = postId;
         card.innerHTML = html;
-        feed.appendChild(card); // appendChild works for desc since snapshot order is desc
+        feed.appendChild(card);
       }
     }
   });
@@ -737,7 +723,7 @@ window.deletePost = async id => {
   if (confirm("Delete this post?")) await deleteDoc(doc(db, "posts", id));
 };
 
-/* 🔔 UNREAD MESSAGES (FIX #4) */
+/* 🔔 UNREAD MESSAGES */
 function loadUnreadMessages() {
   const q = query(collection(db, "messages"), where("receiverId", "==", auth.currentUser.uid), where("seen", "==", false));
   onSnapshot(q, snap => {
@@ -762,9 +748,7 @@ window.sharePost = id => {
   navigator.clipboard.writeText(url).then(() => alert("Link copied!"));
 };
 
-window.navigate = p => location.href = p;
-window.viewProfile = id => location.href = "profile.html?uid=" + id;
 window.logout = async () => { await signOut(auth); location.href = "index.html"; };
-</script>>
+</script>
 </body>
 </html>
